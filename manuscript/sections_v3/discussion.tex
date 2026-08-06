@@ -1,0 +1,67 @@
+\section{Discussion}
+\subsection{Relation to stochastic shock-motion models}
+The analysis identifies two apparently contradictory facts. The instantaneous shock-attached fields are high rank, yet a reproducible angular displacement exists. There is no contradiction because energetic dominance and dynamic organization are different properties. The translation template accounts for only $1$--$5\%$ of raw instantaneous variance, but its amplitude is correlated across distant angles, across two Knudsen-number records and across multiple macroscopic moments. The coordinate is therefore best understood as a weak slow direction embedded in a much larger broadband kinetic state space.
+
+A useful reduced description follows the stochastic shock-motion lineage of \citet{Plotkin1975} and its later low-order developments \citep{PoggieSmits2005,Piponniau2009,TouberSandham2011,ClemensNarayanaswamy2014}. For the scalar collective amplitude $a$, the leading model is
+\begin{equation}
+ \frac{\mathrm d a}{\mathrm d\tstar}+\kappa^*a=f(\tstar),
+ \qquad \kappa^*=\frac{1}{\tau_a^*},
+ \label{eq:plotkin}
+\end{equation}
+where $f$ is an effective broadband forcing and $\kappa^*$ is a body-normalized restoring rate. For white forcing the stationary process is Ornstein--Uhlenbeck \citep{OrnsteinUhlenbeck1930}, with Lorentzian response
+\begin{equation}
+ S_{aa}(\omega^*)=\frac{S_{ff}}{(\kappa^*)^2+(\omega^*)^2}.
+ \label{eq:lorentzian}
+\end{equation}
+The present autoregressive fit is the discrete-time counterpart of \cref{eq:plotkin}. It estimates $\kappa^*$ but does not yet identify $S_{ff}$ or prove that the forcing is upstream mass flux rather than another global numerical or physical input. The analogy to Plotkin dynamics is therefore mechanistic at the level of a damped low-pass response, not a claim that a rarefied bow shock and a separated turbulent interaction share the same forcing mechanism.
+
+The separation of time scales supports this interpretation. At the two resolved conditions the memory survives for $6.5$--$10.6$ passages across the mean 10--90 layer and about three passages across the standoff distance. The response is consequently slower than local profile crossing and is coupled over a large fraction of the bow geometry. No growing DMD eigenvalue was detected, but this empirical observation is not a linear-stability proof. A more general representation is
+\begin{equation}
+ \frac{\partial q'}{\partial t}=\mathcal L_k q'+\eta(t),
+ \label{eq:stochastic_operator}
+\end{equation}
+where $\mathcal L_k$ is a stable kinetic operator and $\eta$ is stochastic forcing. The stationary covariance of an ideal linear system satisfies
+\begin{equation}
+ \mathcal L_k\bm C+\bm C\mathcal L_k^\dagger+\bm Q=0.
+ \label{eq:lyap}
+\end{equation}
+The present work estimates a projected macroscopic part of $\bm C$; it does not identify $\mathcal L_k$ or $\bm Q$ separately.
+
+\subsection{Dynamic consistency is distinct from mean similarity}
+The companion paper \citep{RoohiShoja2026Mean} asks whether the \emph{mean} rarefied bow layer can be represented by one shifted and broadened profile across parameter space. It reports mean inflation, variable-specific length scales and breakdown of universal static similarity. The present result is complementary and non-redundant. Between $\KnD=0.01$ and $0.025$ the mean density width increases by $82\%$, yet the normalized displacement eigenfunction and convective memory remain statistically compatible. The dynamic coordinate is therefore not a trivial restatement of the mean profile collapse. It describes how the instantaneous layer fluctuates about each mean state.
+
+This separation suggests a two-level reduced description. The first level is a slowly varying mean geometry parameterized by rarefaction, as quantified in the companion study. The second is a stochastic displacement amplitude that acts on the local mean gradients. Such a model has the schematic form
+\begin{equation}
+ q(s,\theta,t;\KnD)
+ =\mean q(s,\theta;\KnD)
+ -a(t;\KnD)g(\theta;\KnD)\partial_s\mean q
+ +q'_\perp,
+ \label{eq:twolevel}
+\end{equation}
+where $q'_\perp$ is the high-rank residual. The present data show that $g$ changes much less rapidly than $\mean q$ between the two resolved Knudsen numbers. This is precisely why a weak coordinate can remain dynamically recognizable even as the mean layer broadens substantially.
+
+\subsection{Moment-selective displacement and relaxation}
+The coherent gains reveal a hierarchy that is hidden by marker-only analysis. Density is the variable used to define the half-jump centre, so a strong density gain is expected, but pressure follows almost as closely. This is physically consistent with a compression displacement in which density and translational energy jointly alter pressure. Mach number is more weakly coupled because it depends on both velocity deceleration and the local sound speed. Translational temperature is weakest at $\KnD=0.025$, consistent with thermal adjustment being distributed over a broader relaxation region than the density compression.
+
+The key point is not simply that the correlations decrease. The angular displacement shapes are strongly aligned across the two resolved cases while the relative moment amplitudes separate. Thus early rarefaction does not first destroy the geometric coordinate; it first reduces the degree to which all moments are slaved to that coordinate. We refer to this two-state contrast as moment-selective weakening of synchrony. It is a temporal analogue of multi-scale relaxation, but it is measured from synchronized fluctuation amplitudes rather than from mean thicknesses. The result provides a more specific physical answer than ``the shock becomes diffuse'': the compression geometry remains organized, while thermal and velocity--sound-speed responses contain a larger independent component at $\KnD=0.025$.
+
+\subsection{Relation to kinetic stability theory}
+The kLST framework of \citet{Karpuzcu2026} linearizes the Boltzmann--BGK equation about one-dimensional normal shocks and demonstrates that non-Maxwellian velocity distributions shift the eigenspectrum toward less stable regions. Their calculation concerns planar argon shocks at $M_\infty\leq4$ and deterministic spanwise perturbations, whereas the present calculation concerns stochastic, curved, body-coupled nitrogen flow at $M_\infty=10$. Direct equality between their eigenmodes and the present covariance mode would therefore be unjustified.
+
+The two studies nevertheless define a useful next step. Along the stagnation line, one may construct a locally planar kinetic base state and determine whether its least-damped response has a macroscopic projection proportional to $-\partial_s\mean q$. Agreement in spatial shape and decay time would support the interpretation of the measured coordinate as stochastic excitation of a stable kinetic response. Disagreement would be equally informative, indicating that curvature, wall coupling or non-normal forcing is essential. The present displacement template supplies the observable against which such a theory should be tested.
+
+\subsection{Implications for particle-data modal analysis}
+The physical-support audit provides a general warning for registered particle fields. A map can be numerically smooth and produce a large singular value while representing repeated extrapolated values rather than fluid motion. Support must be enforced before interpolation, and modal energy must be audited spatially before it is interpreted. This issue is especially acute near curved walls, moving fronts and adaptive point clouds.
+
+A second warning is that finite-particle noise is not white. Snapshot accumulation, particle persistence and adaptive sampling produce correlated feature error. Group averaging after feature extraction would not reproduce the statistics of a nonlinear marker; the fields must be averaged first and the marker re-extracted. The attenuation function in \cref{eq:attenuation} then permits persistent and sampling components to be compared on the same footing. The combined use of coarse graining, out-of-sample prediction, synthetic controls and full-field matched filtering is more informative than applying POD, DMD or SPOD alone.
+
+For reduced modelling, \cref{eq:twolevel} suggests that one should not seek a globally low-rank representation of every instantaneous field. A more efficient strategy is to represent the parameterized mean layer, the slow displacement amplitude and the broadband residual separately. Density and pressure may share a displacement coordinate over the near-continuum range, whereas Mach number and thermal variables require additional latent coordinates or relaxation states.
+
+\subsection{Limitations and scope of the conclusions}
+The study uses one body shape, Mach number, wall condition and rotational nitrogen model. The perfect-gas temperature estimate above shows that vibration is energetically accessible, so vibrational relaxation could add a slow coordinate in physical nitrogen. The present result must therefore not be generalized to thermochemical nonequilibrium without a vibrationally active calculation.
+
+Absolute fluctuation amplitudes depend on simulator-particle weight, sampling duration and output cadence; they are not universal molecular fluctuation levels. The two resolved records were produced with the same solver family and output mechanism. Reproduction with an independent random seed and a controlled simulator-particle-number sweep is therefore the decisive remaining test of whether the shape and relaxation time are numerical-realization invariant while the variance scales with sampling level. Until that control is completed, the manuscript claims a reproducible response within the present campaign, not an absolute fluctuation amplitude of real nitrogen.
+
+The computational configuration uses the upper symmetric sector. The inferred same-signed mode is therefore breathing-like within the imposed symmetry class, while an antisymmetric rocking mode is excluded by construction. Distinguishing breathing from spontaneous rocking requires a full-domain calculation without a symmetry boundary. The full-field template is also a first-order translation model and explains only a small fraction of unconditioned variance; curvature changes, width fluctuations and moment-specific relaxation can contribute additional coordinates.
+
+Finally, the mode is resolved only at $\KnD=0.01$ and $0.025$. Power analysis shows that the higher-Knudsen records cannot exclude a mode of comparable low-Knudsen amplitude, so the manuscript does not claim disappearance or a critical Knudsen number. Direct velocity-distribution-function analysis or kinetic resolvent/eigenmode calculations would be needed to connect the measured macroscopic coordinate rigorously to a collision-mediated mechanism.
