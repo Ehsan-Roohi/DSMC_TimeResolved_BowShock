@@ -1,3 +1,9 @@
+% Compatibility shim for legacy JFM class on current Overleaf engines.
+\ifdefined\pdfpagewidth\else\newdimen\pdfpagewidth\fi
+\ifdefined\pdfpageheight\else\newdimen\pdfpageheight\fi
+\ifdefined\pdfoutput\else\newcount\pdfoutput\pdfoutput=1\fi
+% !TeX program = pdflatex
+% !TeX root = main_v5.tex
 \documentclass[paper]{JFM-FLM_Au}
 
 \usepackage{graphicx}
@@ -59,3 +65,15 @@ Time-resolved direct simulation Monte Carlo (DSMC) fields are used to test wheth
 \begin{keywords}
 rarefied gas dynamics, hypersonic flow, shock waves, direct simulation Monte Carlo, stochastic coherent structures
 \end{keywords}
+
+\input{sections_v5/introduction}
+\input{sections_v5/methods}
+\input{sections_v5/results}
+\input{sections_v5/discussion}
+\input{sections_v5/conclusions}
+\input{sections_v5/backmatter}
+\input{sections_v5/appendices}
+
+\bibliographystyle{jfm}
+\bibliography{references}
+\end{document}
