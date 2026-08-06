@@ -1,0 +1,51 @@
+\documentclass[paper]{JFM-FLM_Au}
+
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{epstopdf,epsfig}
+\usepackage{newtxtext,newtxmath}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{amsmath,bm,mathtools}
+\usepackage{siunitx}
+\usepackage{booktabs,tabularx,array}
+\usepackage{xcolor}
+\usepackage[nameinlink,noabbrev]{cleveref}
+\usepackage{enumitem}
+\usepackage{placeins}
+
+% Suppress article-type page-limit reminders from the author template in the review PDF.
+\makeatletter
+\def\pagelimitfooter{\hbox to \textwidth{\hfill{\cppagefont\thepage}}}
+\makeatother
+
+\hypersetup{colorlinks=true,urlcolor=blue,citecolor=black,linkcolor=black}
+\graphicspath{{figures/}}
+\newcommand{\KnD}{Kn_D}
+\newcommand{\tstar}{t^*}
+\newcommand{\scenter}{s_{50}}
+\newcommand{\deltaten}{\delta_{10\text{--}90}}
+\newcommand{\mean}[1]{\overline{#1}}
+\newcommand{\rms}[1]{#1_{\mathrm{rms}}}
+
+\title{A slow collective displacement coordinate in a broadening rarefied hypersonic bow-shock layer}
+\lefttitle{Slow collective displacement of a rarefied bow shock}
+\righttitle{A. Shoja-Sani and E. Roohi}
+\corresau{Ehsan Roohi, \email{roohie@umass.edu}}
+
+\author{Ahmad Shoja-Sani\aff{1}\and Ehsan Roohi\aff{2}}
+\affiliation{
+\aff{1}Department of Mechanical Engineering, Ferdowsi University of Mashhad, Mashhad 9177948974, Iran
+\aff{2}Department of Mechanical and Industrial Engineering, University of Massachusetts Amherst, 160 Governors Drive, Amherst, MA 01003, USA
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Time-resolved direct simulation Monte Carlo (DSMC) fields are used to test whether a detached rarefied hypersonic bow shock possesses a slow collective displacement that can be separated from correlated particle-sampling fluctuations. Mach-10 rotational-nitrogen flow over a circular cylinder is analysed for $0.01\leq\KnD\leq1$. A density half-jump front is extracted on body-normal rays, unsupported solid-side points are excluded, and temporal coarse graining is performed before feature extraction. The marker covariance is decomposed into a persistent autoregressive component and a correlated sampling component, with model selection, block bootstrap, synthetic controls and full-field matched filtering used as independent gates. Corrected field POD is high rank at every Knudsen number, yet a weak, same-signed angular displacement is resolved at $\KnD=0.01$ and $0.025$. Across these two states the mean density layer broadens by $82\%$, while the angular mode shapes remain strongly aligned and their inferred memories are statistically compatible with an order-one convective time. Density and pressure recover the marker motion most strongly; Mach number and translational temperature show weaker participation at $\KnD=0.025$, indicating moment-selective loss of synchrony rather than immediate loss of the geometric coordinate. The signal is therefore interpreted as a low-pass, noise-excited bow-layer response embedded in broadband kinetic fluctuations, analogous in form---but not in forcing mechanism---to classical stochastic models of shock motion. The present higher-Knudsen records are not sufficiently sensitive to establish physical disappearance.
+\end{abstract}
+
+\begin{keywords}
+rarefied gas dynamics, hypersonic flow, shock waves, direct simulation Monte Carlo, stochastic coherent structures
+\end{keywords}
