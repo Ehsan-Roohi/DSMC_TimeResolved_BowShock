@@ -1,0 +1,5 @@
+case,seed,particle_multiplier,n_snapshots,dt_star,mode_alignment_to_N1A,tau_star,tau_q025,tau_q975,raw_marker_variance,physical_marker_variance,density_marker_corr,pressure_marker_corr,qc_status,notes
+N1-A,104729,1,,,,,,,,,,PENDING,
+N1-B,130363,1,,,,,,,,,,PENDING,
+N2-A,104729,2,,,,,,,,,,PENDING,
+N2-B,130363,2,,,,,,,,,,PENDING,
