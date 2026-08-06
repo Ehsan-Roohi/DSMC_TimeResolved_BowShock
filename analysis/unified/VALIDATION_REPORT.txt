@@ -1,0 +1,43 @@
+VALIDATION REPORT
+=================
+
+Package purpose
+---------------
+Unified analysis of:
+  Kn = 0.01, 0.025, 0.05, 0.075, 0.10, 0.15, 0.25, 0.50, 1.00
+
+Tests completed
+---------------
+1. Every Python file passed py_compile.
+2. Temporal coarse-graining synthetic self-test: PASS.
+3. Correlated-noise covariance synthetic self-test: PASS.
+4. Dynamic Kn-label parsing checked for Kn0p025, Kn0p10 and Kn1p00: PASS.
+5. Preflight QC tested on real DS2FF-format files:
+   - snapshot discovery
+   - Tecplot variable/header consistency
+   - log parsing
+   - dt_star inference from log time spacing and U_inf
+   Result: PASS.
+6. Injected-amplitude power/exclusion analysis tested on the real
+   Kn=0.01 temporal-coarse-graining outputs with a reduced one-replicate
+   smoke test. Expected CSV output was produced: PASS.
+
+Scientific safeguards
+---------------------
+- Primary POD comparison uses exactly 200 snapshots per Kn.
+- Physical support is restricted to s/R >= 0.02.
+- Half-jump registration is used.
+- SPOD is off by default.
+- Full-available records are analyzed separately from common200.
+- Non-detection is not interpreted as absence unless the power/exclusion
+  analysis demonstrates adequate sensitivity.
+- New-case dt_star values are not guessed. They must be resolved from the
+  run logs or from exact U_inf and the logged snapshot times.
+
+Important limitation
+--------------------
+The full nine-case production campaign cannot be executed in this
+environment because the user's Windows raw snapshot paths are not mounted.
+Shuja must edit the case paths in:
+  config/all_kn_campaign_config.json
+and run QC before the production analysis.

@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+title: "DSMC Time-Resolved Bow-Shock Dynamics"
+message: "Please cite the associated manuscript and the companion mean-flow preprint."
+type: software
+authors:
+  - family-names: Shoja-Sani
+    given-names: Ahmad
+  - family-names: Roohi
+    given-names: Ehsan
+    email: roohie@umass.edu
+year: 2026
+repository-code: "https://github.com/Ehsan-Roohi/DSMC_TimeResolved_BowShock"

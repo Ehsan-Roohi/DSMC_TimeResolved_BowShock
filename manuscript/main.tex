@@ -1,0 +1,528 @@
+\documentclass[paper]{JFM-FLM_Au}
+
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{epstopdf,epsfig}
+\usepackage{newtxtext,newtxmath}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{amsmath,bm,mathtools}
+\usepackage{siunitx}
+\usepackage{booktabs,tabularx,array}
+\usepackage{xcolor}
+\usepackage[nameinlink,noabbrev]{cleveref}
+\usepackage{enumitem}
+\usepackage{placeins}
+
+\hypersetup{colorlinks=true,urlcolor=blue,citecolor=black,linkcolor=black}
+\graphicspath{{figures/}}
+\newcommand{\KnD}{Kn_D}
+\newcommand{\tstar}{t^*}
+\newcommand{\scenter}{s_{50}}
+\newcommand{\deltaten}{\delta_{10\text{--}90}}
+\newcommand{\mean}[1]{\overline{#1}}
+\newcommand{\rms}[1]{#1_{\mathrm{rms}}}
+
+\title{A slow collective displacement coordinate in a broadening rarefied hypersonic bow-shock layer}
+\lefttitle{Slow collective displacement of a rarefied bow shock}
+\righttitle{A. Shoja-Sani and E. Roohi}
+\corresau{Ehsan Roohi, \email{roohie@umass.edu}}
+
+\author{Ahmad Shoja-Sani\aff{1}\and Ehsan Roohi\aff{2}}
+\affiliation{
+\aff{1}Department of Mechanical Engineering, Ferdowsi University of Mashhad, Mashhad 9177948974, Iran
+\aff{2}Department of Mechanical and Industrial Engineering, University of Massachusetts Amherst, 160 Governors Drive, Amherst, MA 01003, USA
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Time-resolved direct simulation Monte Carlo (DSMC) fields are used to determine whether a detached rarefied hypersonic bow shock contains a dynamically meaningful displacement coordinate that can be separated from correlated molecular sampling fluctuations. The configuration is Mach-10 nitrogen flow over a circular cylinder for $0.01\leq\KnD\leq1$. A density half-jump centre is extracted on body-normal rays, unsupported solid-side points are removed before shock-attached interpolation, and temporal coarse graining is performed before feature extraction. The marker covariance is represented as the sum of a persistent autoregressive component and a correlated sampling component. Corrected field proper orthogonal decomposition is high rank at every Knudsen number, yet a weak collective coordinate is resolved independently at $\KnD=0.01$ and $0.025$. Over this interval the mean 10--90 density width increases by $82\%$, while the physical angular eigenfunction retains an absolute normalized inner product of $0.972$ and the convective memory changes only from $\tau_p^*=0.653$ to $0.724$. The memory persists for approximately $6.5$--$10.6$ layer-passage times and $2.8$--$3.1$ standoff-passage times, identifying a slow global response rather than local marker jitter. Full-field matched filtering recovers the same motion from density and pressure, with marker correlations $(0.946,0.901)$ at $\KnD=0.01$ and $(0.790,0.727)$ at $\KnD=0.025$. A new moment-participation analysis shows that density and pressure remain strongly coupled to the displacement as the layer broadens, whereas Mach number and translational temperature progressively decouple. Thus early rarefaction preserves the angular geometry and slow memory of the collective coordinate while weakening thermodynamic synchronization. At $\KnD\geq0.05$, statistical power deteriorates too rapidly to establish physical disappearance. The result is a noise-separated, multi-moment validation of a slow collective coordinate embedded in broadband kinetic fluctuations, distinct from the mean shock-layer inflation and parameter-space similarity considered in the companion study.
+\end{abstract}
+
+\begin{keywords}
+rarefied gas dynamics, hypersonic flow, shock waves, direct simulation Monte Carlo, stochastic coherent structures
+\end{keywords}
+
+\section*{Statement of significance}
+The companion mean-flow study of the same cylinder family quantifies rarefaction-induced standoff growth, layer broadening and variable-dependent parameter-space similarity \citep{RoohiShoja2026Mean}. The present work asks a different fluid-mechanical question: does the broadened bow layer possess a slow collective coordinate in time? This distinction is not semantic. Mean profiles can broaden smoothly even when instantaneous motion is dominated by particle sampling, and a large POD mode can be created artificially if a registered window enters the solid body. After eliminating that support artifact, the instantaneous fields are strongly high dimensional. Nevertheless, two independent near-continuum records contain the same long-range angular displacement shape. More importantly, the shape persists while the mean density layer almost doubles in width. The collective memory is several times longer than either the local layer-passage or standoff-passage time, and the signal is recovered independently from density, pressure, Mach number and translational temperature. The new physical result is therefore a separation between static broadening and dynamic organization: early rarefaction preserves a slow angular displacement geometry but progressively reduces the synchronous participation of the thermodynamic moments. The coordinate is weak in raw variance and is not interpreted as an instability. It is a slow, noise-excited response embedded within broadband kinetic fluctuations. This provides a dynamic counterpart to the mean-flow paper and a controlled framework for distinguishing physical coherent motion from correlated sampling noise in particle simulations.
+
+\section{Introduction}
+Hypersonic flow over a blunt body produces a detached compression layer in which momentum redirection, translational heating, internal-energy relaxation and gas--surface interaction occur over coupled spatial scales. When the molecular mean free path is no longer negligible relative to the body dimension, the layer has finite kinetic thickness and the continuum notion of a discontinuous shock surface becomes operational rather than exact. DSMC remains the reference particle method in this regime \citep{Bird1994,Lofthouse2007}, and the circular cylinder remains a canonical geometry because it contains a curved detached front, a stagnation region and strong wall interaction without geometric complexity.
+
+Most cylinder studies have focused on mean flow, force, heating, slip or continuum breakdown. Time-resolved particle fields pose a different problem. \citet{Stefanov2000} demonstrated that macroscopic fluctuations around a rarefied hypersonic cylinder are substantial and spatially non-uniform. More recent kinetic studies have extracted coherent structures from shock/boundary-layer interactions, separated ramps and hypersonic boundary layers \citep{Sawant2021,Karpuzcu2025,Klothakis2021}. These works establish that kinetic snapshots contain physically organized dynamics, but they also emphasize that coherent-structure extraction from particle data cannot be separated from sampling statistics.
+
+The specific question here is whether the detached bow layer possesses a collective displacement coordinate. In a continuum description, translation of a thin front produces the familiar first-order disturbance
+\begin{equation}
+ q'(s,\theta,t)\simeq-a(\theta,t)\frac{\partial \mean q}{\partial s},
+ \label{eq:translation}
+\end{equation}
+where $s$ is distance from the wall along a body-normal ray. If the bow shock moves collectively, $a(\theta,t)$ should contain a slowly varying angular component shared by distant portions of the front. In DSMC, however, the observed marker also contains finite-particle noise, and the noise is temporally correlated because particles and sampling accumulators persist between neighbouring outputs. A raw POD, DMD or SPOD decomposition can therefore promote sampling structure into an apparently coherent mode.
+
+Two additional complications are important. First, registration methods remove transport-dominated variability and can greatly improve reduced-order compactness \citep{RowleyMarsden2000,Reiss2018,Taddei2020}. Their validity depends on the registration map and its support. A shock-attached grid that crosses a solid boundary is not benign: interpolation can fill a non-physical region with repeated wall-adjacent values and generate artificial low rank. Second, POD and dynamic modes answer different questions. POD identifies variance-optimal structures \citep{Lumley1967,Sirovich1987,Berkooz1993,Taira2017}; DMD and SPOD target time evolution and frequency-dependent coherence \citep{Schmid2010,Towne2018}. None of them, by themselves, distinguishes physical covariance from particle sampling covariance.
+
+A related theoretical development is kinetic linear stability theory. \citet{Karpuzcu2026} linearized the Boltzmann--BGK equation about one-dimensional kinetic normal-shock base states and showed that non-Maxwellian velocity distributions shift continuous spectral branches toward less stable locations. That analysis concerns deterministic infinitesimal perturbations of planar argon shocks up to Mach 4, whereas the present work concerns stochastic fluctuations of a curved, body-coupled nitrogen bow shock at Mach 10. The two are therefore not direct validations of one another. They do, however, motivate a useful interpretation: a linearly stable kinetic response can be continuously excited by molecular forcing, so a reproducible covariance mode need not be an unstable eigenmode.
+
+The companion study of this cylinder family \citep{RoohiShoja2026Mean} is available as arXiv:2605.17099. It examines mean standoff, mean 10--90 thickness, variable-specific relaxation lengths and parameter-indexed shock-attached POD. Those results establish that the mean compression layer inflates and loses single-scale similarity as rarefaction increases. None of those parameter-space results establishes that the layer moves collectively in time. The present paper uses the time-resolved nitrogen outputs and addresses that dynamic counterpart. The only mean quantities reused are the half-jump position and width required to define the instantaneous coordinate; all covariance, memory, power, phase-portrait and full-field displacement results are new. The present paper makes four contributions. First, it audits the support of the shock-attached map and quantifies false low-rank structures created by solid-side interpolation. Second, it applies temporal coarse graining before marker extraction and infers a physical covariance in the presence of correlated sampling noise. Third, it identifies the same long-range angular displacement shape in independent $\KnD=0.01$ and $0.025$ records. Fourth, it validates the coordinate in the complete density, Mach-number, pressure and translational-temperature fields through the translation template in \cref{eq:translation}. The central result is deliberately narrow: a weak collective coordinate exists in the resolved near-continuum cases. The present data do not have sufficient power to prove that it disappears as rarefaction increases. Three physical hypotheses organize the analysis. First, a true displacement response must survive temporal coarse graining and remain coherent over angular separations much larger than one sampling cell. Second, if early rarefaction merely broadens the mean layer without changing its global dynamics, the normalized angular mode and convective memory should remain approximately invariant between $\KnD=0.01$ and $0.025$. Third, if different moments cease to move synchronously, the equivalent displacement amplitudes inferred from density, pressure, Mach number and temperature should exhibit a systematic participation hierarchy even while the marker mode remains detectable.
+
+\section{Configuration and analysis}
+\subsection{DSMC data and nondimensionalization}
+The configuration is two-dimensional Mach-10 nitrogen flow over a circular cylinder of diameter $D=\SI{0.3048}{m}$. The freestream and wall temperatures are $T_\infty=\SI{200}{K}$ and $T_w=\SI{500}{K}$. Gas--gas collisions use the variable-hard-sphere model and the standard DS2V rotational nonequilibrium treatment; vibrational excitation and chemistry are not included. The Knudsen number is
+\begin{equation}
+ \KnD=\frac{\lambda_\infty}{D},
+\end{equation}
+where $\lambda_\infty$ is the freestream mean free path. Time is reported as $\tstar=tU_\infty/D$.
+
+The geometry, molecular model and statistically converged mean fields are shared with the companion mean-flow paper \citep{RoohiShoja2026Mean}, but the data object analysed here is different. The companion work treats one converged field per operating condition and asks how the parameterized mean family collapses. Here each operating condition supplies a consecutive temporal record, and no parameter-to-parameter POD mode is interpreted dynamically. This separation is important because a compact parameterized mean family may coexist with high-dimensional instantaneous fluctuations, while a weak coherent coordinate can remain invisible to energy-ranked field POD.
+
+Nine Knudsen numbers are considered. Every case contains at least 200 consecutive macroscopic fields; the longer records are used for stationarity, covariance and power analyses, whereas exactly 200 snapshots are used for direct field-POD comparison. The output cadence is not forced to be identical in physical time, so all temporal fits use the measured $\Delta \tstar$ of each record. \Cref{tab:data} summarizes the data and the mean density half-jump geometry extracted below.
+
+\begin{table}
+\centering
+\caption{Time-resolved nitrogen DSMC data. $N_s$ is the number of available snapshots; $\Delta \tstar$ is the centre-to-centre output cadence. The final two columns are sector medians of the density half-jump location and 10--90 width.}
+\label{tab:data}
+\small
+\begin{tabular}{ccccc}
+\toprule
+$\KnD$ & $N_s$ & $\Delta \tstar$ & $\scenter/R$ & $\deltaten/R$ \\
+\midrule
+0.010 & 200 & 0.288 & 0.462 & 0.123 \\
+0.025 & 600 & 0.240 & 0.468 & 0.224 \\
+0.050 & 419 & 0.431 & 0.494 & 0.359 \\
+0.075 & 674 & 0.491 & 0.519 & 0.470 \\
+0.100 & 400 & 0.369 & 0.538 & 0.561 \\
+0.150 & 703 & 0.389 & 0.565 & 0.710 \\
+0.250 & 462 & 0.443 & 0.601 & 0.912 \\
+0.500 & 350 & 0.508 & 0.661 & 1.243 \\
+1.000 & 283 & 0.789 & 0.756 & 1.734 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Half-jump marker and physical shock-attached support}
+The upper upstream sector is represented by 60 body-normal rays over $120^\circ\leq\theta\leq179^\circ$. On each ray, $s=r-R$ measures distance from the cylinder wall. Robust upstream and downstream density plateaux define the normalized transition
+\begin{equation}
+ \rho^*(s,\theta,t)=\frac{\rho-\rho_{up}}{\rho_{down}-\rho_{up}}.
+\end{equation}
+The centre $\scenter(\theta,t)$ is the $\rho^*=0.5$ crossing and $\deltaten(\theta,t)$ is the distance between the 0.1 and 0.9 crossings. The attached coordinate is
+\begin{equation}
+ \xi=\frac{s-\scenter}{\deltaten}, \qquad -1\leq\xi\leq4.
+ \label{eq:xi}
+\end{equation}
+The common attached grid contains 260 points in $\xi$. A point is retained only when $s/R\geq0.02$; unsupported points are masked rather than filled from the nearest gas cell. \Cref{fig:geometry} illustrates the map, the 10--50--90 construction and a time-resolved marker field.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig01_geometry_marker.pdf}
+\caption{Shock-attached extraction at $\KnD=0.01$. (a) Mean normalized density, selected body-normal rays and the density half-jump centre. Only the gas-side attached sector is sampled. (b) Stagnation-ray normalized density profile with 10, 50 and 90\% transition markers. (c) Centred time-resolved half-jump location over the analysis sector.}
+\label{fig:geometry}
+\end{figure}
+
+The physical-support restriction is essential rather than cosmetic. A preliminary registration route allowed portions of the attached window to lie inside the cylinder and filled them by nearest-neighbour remapping. As shown in \cref{fig:support}, the apparent leading density energy at $\KnD=0.25$ decreased from 38.8\% to 2.9\% after clipping; the corresponding rotational-temperature energy at $\KnD=0.5$ decreased from 47.9\% to 1.2\%. The original modes are concentrated at the solid-side edge of the attached coordinate. We retain this failed route as a negative control and use only physical-domain results below.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig02_physical_support_audit.pdf}
+\caption{Physical-support audit of the apparent low-rank structures. The left column shows leading modes from a registration that admitted solid-side points, the middle column isolates their non-physical contribution, and the right column shows the physical-domain result. The black curve in the original maps marks the $s/R=0.02$ support boundary. The collapse of $E_1$ demonstrates that solid-side remapping can create false coherence.}
+\label{fig:support}
+\end{figure}
+
+\subsection{Temporal coarse graining and correlated-noise covariance}
+To test whether marker fluctuations survive increased sampling, groups of $m=1,2,4,8,16$ consecutive density fields are averaged \emph{before} re-extracting $\scenter$ and $\deltaten$. Let $C_m$ denote the angular covariance of the marker obtained from group size $m$. The attenuation of an AR(1) process with lag-one coefficient $\phi$ under block averaging is
+\begin{equation}
+ A_m(\phi)=\frac{1}{m^2}\left[m+2\sum_{k=1}^{m-1}(m-k)\phi^k\right].
+ \label{eq:attenuation}
+\end{equation}
+We model the covariance as
+\begin{equation}
+ C_m=A_m(\phi_p)C_p+A_m(\phi_n)C_n,
+ \label{eq:covmodel}
+\end{equation}
+where $C_p$ is persistent physical covariance and $C_n$ is correlated marker/sampling covariance. The 10--90 width channel, which is much more sensitive to local sampling fluctuations, calibrates $\phi_n$; the centre channel then determines $\phi_p$, $C_p$ and $C_n$. The fitted covariance matrices are constrained to be positive semidefinite.
+
+Model preference is assessed by the small-sample corrected Akaike information criterion, leave-one-group-size-out covariance prediction, moving-block bootstrap, far-angle covariance for $|\theta-\theta'|\geq15^\circ$, and matched synthetic positive and negative controls. The physical time scale is
+\begin{equation}
+ \tau_p^*=-\frac{\Delta \tstar}{\log \phi_p}.
+\end{equation}
+A physical mode is called resolved only when the two-component model improves out-of-sample prediction, bootstrap model preference is positive, long-range covariance is positive, synthetic false detections remain controlled, and the PSD-constrained fit does not require a large correction.
+
+\subsection{Stationarity, window persistence and control experiments}
+A persistent covariance can be inferred only from a record that is sufficiently stationary over the analysis interval. For every full record we test the angular-mean centre and width for a linear trend and compare the variances of the first and second halves using Levene's test. The full $\KnD=0.025$ record gives centre trend and variance-stationarity $p$-values of 0.407 and 0.149, respectively; the corresponding width values are 0.752 and 0.098. The width variance is therefore close to the conventional 5\% threshold but does not reject stationarity. The full records at $\KnD=0.05$, $0.075$ and $0.15$ likewise show no significant centre trend. The $\KnD=0.10$ centre has a weaker margin ($p=0.070$), motivating the window-resolved interpretation used below.
+
+Stationarity of low-order statistics does not guarantee persistence of the inferred mode. We therefore repeat the complete covariance fit in overlapping 192-snapshot windows stepped by 48 snapshots. A window passes only if the physical-plus-noise model has $\Delta AIC_c>10$, improves LOOCV, recovers a mode aligned by at least 0.70 with the $\KnD=0.01$ reference, has positive far-angle covariance and requires less than 20\% PSD correction. This is a substantially stronger requirement than a positive in-sample likelihood gain.
+
+Two synthetic controls complete the calibration. The negative control simulates only the fitted correlated noise covariance and measures false detections. The positive control injects a known rank-one angular displacement with prescribed memory and measures detection power. For the final exclusion analysis, injection amplitude is varied from zero to six times the reference physical standard deviation, and Wilson intervals are used for power. This permits a non-detection to be described as either informative or sensitivity-limited.
+
+\subsection{Full-field displacement-template validation}
+The marker analysis is tested against the complete macroscopic fields. For $q\in\{\rho,M,T_{tr},p\}$ we define
+\begin{equation}
+ \Psi_q(s,\theta)=-g(\theta)\frac{\partial \mean q}{\partial s},
+ \label{eq:template}
+\end{equation}
+where $g(\theta)$ is the normalized physical angular mode inferred at $\KnD=0.01$. The least-squares displacement amplitude is
+\begin{equation}
+ a_q(t)=\frac{\langle q'(t),\Psi_q\rangle_W}{\langle \Psi_q,\Psi_q\rangle_W},
+ \label{eq:amplitude}
+\end{equation}
+with a weight $W$ concentrated on the density-gradient core and normalized to give each retained ray equal total weight. This construction uses every supported field point rather than one crossing. Moving-block confidence intervals and circular time-shift tests quantify the correlation between $a_q(t)$ and the independently extracted marker amplitude. We also form conditional composites from the largest positive and negative marker events and compare them with the translation reconstruction.
+
+\subsection{Slow-memory and multi-moment synchronization diagnostics}
+The translation-template amplitudes permit two additional diagnostics that connect the statistical coordinate to flow physics. First, the regression or coherent displacement gain of moment $q$ relative to the marker is
+\begin{equation}
+ G_q=\frac{\operatorname{cov}(a_q,a_m)}{\operatorname{var}(a_m)}
+ =r_{qm}\frac{\sigma_{a_q}}{\sigma_{a_m}},
+ \label{eq:gain}
+\end{equation}
+where $a_m$ is the angular marker amplitude, $a_q$ is the equivalent displacement obtained from the full-field template, and $r_{qm}$ is their correlation. $G_q=1$ corresponds to a field translating with the same amplitude as the marker; $G_q<1$ indicates partial moment participation, additional relaxation or a reduced signal-to-noise ratio. Unlike the projection-energy fraction, $G_q$ retains the sign and amplitude of the coherent component and therefore provides a direct comparison between compression, pressure, velocity--sound-speed and thermal responses.
+
+Second, the four field amplitudes $a_\rho$, $a_p$, $a_M$ and $a_{T_{tr}}$ are standardized and assembled into a matrix $\bm A(t)$. The leading principal-component fraction
+\begin{equation}
+ S_1=\frac{\lambda_1(\operatorname{cov}\bm A)}{\operatorname{tr}(\operatorname{cov}\bm A)}
+ \label{eq:synch}
+\end{equation}
+measures the degree of multi-moment synchronization. A value near unity means that all four moments are organized predominantly by one common temporal amplitude. We also report the median pairwise moment correlation and the correlation of the first principal component with the marker.
+
+The collective memory is compared with two purely geometric convective times. Because $\tstar=tU_\infty/D$, passage across the mean 10--90 width and mean standoff corresponds to
+\begin{equation}
+ t_\delta^*=\frac{\deltaten}{D},\qquad
+ t_s^*=\frac{\scenter}{D}.
+ \label{eq:passage}
+\end{equation}
+The ratios $\tau_p^*/t_\delta^*$ and $\tau_p^*/t_s^*$ distinguish a slow collective response from fluctuations that decorrelate as structures are simply convected across the local layer.
+
+\section{Results}
+\subsection{A broadening mean layer with a high-rank stochastic background}
+The mean density layer broadens continuously over the low-Knudsen interval (\cref{fig:meanrms}). The half-jump centre changes only modestly between $\KnD=0.01$ and $0.025$, but $\deltaten/R$ nearly doubles. At $\KnD=0.05$ the transition spans a substantial fraction of the radius. In contrast, the raw density RMS remains distributed over the complete compression region and is not concentrated on a single deterministic shape.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig03_mean_rms_contours.pdf}
+\caption{Mean compression-layer geometry and raw fluctuation level. Top row: $\mean\rho/\rho_\infty$ with the mean half-jump centre overlaid. Bottom row: $\rms\rho/\rho_\infty$. The same colour range is used across cases in each row. The mean layer broadens strongly while the stochastic field remains spatially distributed.}
+\label{fig:meanrms}
+\end{figure}
+
+This high dimensionality is confirmed by the corrected physical-domain POD. \Cref{fig:highrank} compares the mean geometry with field compactness across all nine Knudsen numbers. For the combined state, $E_1$ decreases from 4.32\% at $\KnD=0.01$ to 1.10\% at $\KnD=1$, and the number of modes required for 90\% variance increases from 146 to 172. Density, pressure, Mach number and both temperatures follow the same qualitative conclusion. The intermediate points do not reveal modal condensation near $\KnD=0.1$; they form a smooth high-rank sequence.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig04_geometry_highrank.pdf}
+\caption{Mean geometry and corrected field dimensionality over the nine-case Knudsen sweep. (a) Sector-median half-jump location and 10--90 width. (b) Corrected leading POD energy. (c) Number of modes required for 90\% variance. Exactly 200 snapshots are used at every $\KnD$ for the POD comparison.}
+\label{fig:highrank}
+\end{figure}
+
+\begin{table}
+\centering
+\caption{Corrected common-200 POD metrics for the combined density--Mach--temperature--pressure state. $C_{10}$ is cumulative energy through ten modes.}
+\label{tab:pod}
+\small
+\begin{tabular}{cccc}
+\toprule
+$\KnD$ & $E_1$ (\%) & $C_{10}$ (\%) & $N_{90}$ \\
+\midrule
+0.010 & 4.32 & 21.91 & 146 \\
+0.025 & 2.34 & 14.87 & 157 \\
+0.050 & 1.63 & 12.12 & 162 \\
+0.075 & 1.81 & 11.84 & 164 \\
+0.100 & 1.45 & 11.08 & 165 \\
+0.150 & 1.47 & 10.46 & 167 \\
+0.250 & 1.20 & 9.26 & 169 \\
+0.500 & 1.24 & 8.99 & 170 \\
+1.000 & 1.10 & 8.45 & 172 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The collective coordinate identified below is therefore not the leading field POD mode. It is a low-amplitude covariance direction embedded in a broadband background. This distinction prevents the common but incorrect inference that a coherent marker necessarily implies a low-rank complete flow field.
+
+\subsection{Coarse graining reveals a persistent low-Knudsen component}
+\Cref{fig:coarse} shows how marker variance changes when density fields are averaged before extraction. The pointwise centre variance decreases strongly with $m$ in all cases, confirming that raw marker motion is dominated by finite-particle fluctuations. The angular-mean variance behaves differently. At $\KnD=0.01$ and $0.025$, the fitted physical contribution attenuates on a finite time scale and remains distinguishable from the sampling component. At $\KnD=0.05$, a nominal two-component fit can be drawn, but it fails the out-of-sample and PSD-correction tests below.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig05_temporal_coarse_graining.pdf}
+\caption{Temporal coarse graining of the density half-jump centre. Top row: mean pointwise angular variance; bottom row: variance of the angular-mean displacement. Symbols are measurements after averaging $m$ consecutive fields before marker extraction. Solid curves are the fitted physical-plus-sampling model; dashed and dotted curves show the inferred components. The $\KnD=0.05$ decomposition is displayed as a diagnostic but is rejected by out-of-sample validation.}
+\label{fig:coarse}
+\end{figure}
+
+The inference metrics are summarized in \cref{tab:inference}. At $\KnD=0.01$, the two-component model gives $\Delta AIC_c=76.4$ with a bootstrap lower bound of 33.3, and reduces the leave-one-group-size-out error from 0.784 to 0.432. At $\KnD=0.025$, the 600-snapshot record gives $\Delta AIC_c=59.1$ and reduces the error from 0.437 to 0.254. The physical angular modes have correlations 0.868 and 0.876 with uniform displacement, positive far-angle covariance, and time scales 0.653 and 0.724. Their direct shape correlation is 0.972. The same structure is therefore recovered from two independent rarefaction levels and records of different length and cadence.
+
+\begin{table}
+\centering
+\caption{Correlated-noise inference for the resolved cases and the $\KnD=0.05$ diagnostic. Brackets denote 95\% moving-block bootstrap intervals. The LOOCV column is the two-component/noise-only error ratio.}
+\label{tab:inference}
+\small
+\begin{tabular}{cccccc}
+\toprule
+$\KnD$ & $N_s$ & $\tau_p^*$ & $\Delta AIC_c$ & LOOCV ratio & $r_{unif}$ / $r_{far}$ \\
+\midrule
+0.010 & 200 & 0.653 [0.425,0.786] & 76.4 [33.3,73.2] & 0.55 & 0.868 [0.704,0.924] / 0.184 [0.065,0.331] \\
+0.025 & 600 & 0.724 [0.239,1.019] & 59.1 [29.0,64.4] & 0.58 & 0.876 [0.781,0.891] / 0.267 [0.120,0.287] \\
+0.050 & 419 & 0.280 [0.222,0.611] & 18.0 [1.9,37.5] & 3.74 & 0.767 [0.241,0.795] / 0.072 [-0.002,0.089] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Angular covariance and collective displacement shape}
+The physical covariance matrices in \cref{fig:covariance} provide the clearest visual evidence. At $\KnD=0.01$ and $0.025$, broad positive off-diagonal regions connect rays separated by tens of degrees. Their leading modes are same-signed over the complete sector and displace the mean half-jump front with a non-uniform angular envelope. The mode should therefore be described as a collective displacement, not as rigid translation. At $\KnD=0.05$, the matrix is patchy, the PSD correction is 54\%, and the two-component LOOCV error is 3.7 times the noise-only error. That panel is retained only to show the failure of identifiability.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig06_covariance_collective_mode.pdf}
+\caption{Noise-separated angular covariance and inferred displacement shape. Top row: correlation matrices of $C_p$. Bottom row: mean density half-jump front, normalized mode amplitude and $\pm1\sigma$ leading-mode displacements. The $\KnD=0.05$ result is diagnostic and is not accepted as a physical covariance mode.}
+\label{fig:covariance}
+\end{figure}
+
+The angular-time maps in \cref{fig:spacetime} show why a direct visual interpretation of raw markers is unreliable. All three cases contain localized streaks and speckle. Projection onto the inferred mode exposes a sector-wide component in the two resolved cases, but a visually structured projection can also be constructed in the rejected case. The quantitative covariance gates, rather than appearance alone, determine whether the projection is physical.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig07_marker_spacetime.pdf}
+\caption{Angular-time displacement maps. Top row: raw centred half-jump marker. Bottom row: projection onto the inferred leading angular mode. Each case is plotted with its own symmetric colour scale to expose structure; the panels are not direct amplitude comparisons. Quantitative model selection is required because a visually organized projection can exist even when the covariance decomposition fails.}
+\label{fig:spacetime}
+\end{figure}
+
+\subsection{The same coordinate is present in the complete macroscopic fields}
+The full-field matched filter tests whether the ray marker corresponds to translation of the entire compression layer. \Cref{fig:multimoment} shows amplitude correlations and representative time series. At $\KnD=0.01$, density and pressure amplitudes correlate with the marker by 0.946 and 0.901. Mach number and translational temperature give 0.755 and 0.707. A principal component formed from the four field amplitudes contains 87.3\% of their variance and correlates 0.886 with the marker. At $\KnD=0.025$, density and pressure remain strong at 0.790 and 0.727; the four-moment consensus contains 70.6\% and correlates 0.647 with the marker. At $\KnD=0.05$, the density correlation falls to 0.183 and cross-variable consensus weakens.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig08_multimoment_validation.pdf}
+\caption{Full-field validation. Top row: correlation matrices of the marker and translation-template amplitudes extracted from density, Mach number, translational temperature and pressure. Bottom row: standardized marker, density and pressure amplitudes. The resolved cases show a shared multi-moment time dependence; the $\KnD=0.05$ case is substantially weaker.}
+\label{fig:multimoment}
+\end{figure}
+
+\begin{table}
+\centering
+\caption{Full-field displacement-template metrics. Each entry is marker correlation followed by the median fraction of raw instantaneous field variance aligned with the template. Correlation intervals are given in the text.}
+\label{tab:template}
+\small
+\begin{tabular}{ccccc}
+\toprule
+$\KnD$ & $\rho$ & $M$ & $T_{tr}$ & $p$ \\
+\midrule
+0.010 & 0.946 / 5.29\% & 0.755 / 2.30\% & 0.707 / 1.24\% & 0.901 / 4.03\% \\
+0.025 & 0.790 / 2.37\% & 0.395 / 1.73\% & 0.273 / 0.97\% & 0.727 / 1.60\% \\
+0.050 & 0.183 / 0.67\% & 0.325 / 1.06\% & 0.164 / 0.50\% & 0.510 / 0.93\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The translation coordinate is weak in an energetic sense. Even at $\KnD=0.01$, the median projected fraction is 5.3\% for density and 4.0\% for pressure; it is smaller for the thermal and Mach-number fields. This is not a defect of the result. It demonstrates that the coherent motion coexists with high-dimensional kinetic fluctuations and explains why conventional field POD does not isolate it as a dominant mode.
+
+The full-field agreement is not a tautological consequence of using density to define the marker. First, pressure, Mach number and translational temperature are projected independently using their own mean gradients; their temporal amplitudes are not used in the marker extraction. Second, circularly shifting the marker relative to each field gives null-test probabilities of 0.0054 for all four moments at $\KnD=0.01$ and for density, Mach number and pressure at $\KnD=0.025$; the density probability at $\KnD=0.05$ rises to 0.0162 and its bootstrap correlation interval approaches zero. Third, the spatial template is shifted by $\Delta\xi=\{-1,-0.5,0.5,1\}$. At $\KnD=0.01$, the unshifted density template captures 5.29\% of variance, compared with 1.25--2.39\% for upstream shifts and 0.29--1.99\% for downstream shifts. At $\KnD=0.025$, the unshifted density value is 2.37\%, approximately twice the $\Delta\xi=-0.5$ value. Pressure exhibits the same zero-shift maximum in both resolved cases. At $\KnD=0.05$, by contrast, the density projection is larger for $\Delta\xi=0.5$ and 1 than for the physical zero-shift template. The resolved low-Knudsen signal is therefore localized on the actual mean compression gradient, whereas the diagnostic $0.05$ response is not.
+
+Conditional composites improve the signal-to-noise ratio without changing the template. \Cref{fig:reconstruction} subtracts the mean of the most negative marker events from the mean of the most positive events. At both resolved Knudsen numbers, the actual density composite has a same-signed front-normal dipole over a broad angular sector. The translation reconstruction captures the global front structure, with weighted composite $R^2=0.922$ and 0.737. The residual retains fine angular and downstream variation but no comparable sector-wide density ridge.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig09_density_template_reconstruction.pdf}
+\caption{Conditional density displacement reconstructed from the full field. The left column is half the difference between composites conditioned on the upper and lower 15\% of marker amplitude, the middle column is the fitted translation template, and the right column is the residual. The two rows correspond to $\KnD=0.01$ and $0.025$.}
+\label{fig:reconstruction}
+\end{figure}
+
+\subsection{Dynamic invariance under early mean-layer broadening}
+The principal new separation between mean and dynamic behavior is shown in \cref{fig:dynamic}. Between $\KnD=0.01$ and $0.025$, the sector-median 10--90 density width increases from $0.123R$ to $0.224R$, an $82\%$ broadening, whereas the mean half-jump standoff changes by only $1.3\%$. The layer therefore undergoes substantial internal spreading before its centre moves appreciably. In spite of this static change, the inferred angular displacement modes remain almost collinear: their absolute normalized inner product is $0.972$ (the demeaned Pearson shape correlation is $0.885$). Both modes remain same-signed over the complete $120^\circ$--$179^\circ$ sector, although the angular envelope is not exactly uniform. Early rarefaction thus changes the thickness of the compression layer much more strongly than it changes the geometry of the resolved collective motion.
+
+The time-scale comparison in \cref{fig:dynamic}(b) strengthens this interpretation. The inferred memories are $\tau_p^*=0.653$ and $0.724$, while the corresponding layer-passage times are only $t_\delta^*=0.0615$ and $0.112$. Hence the covariance persists for $10.6$ and $6.5$ layer passages. It also persists for $2.83$ and $3.09$ standoff passages. A marker perturbation generated only by local advective crossing or by independent cell noise would not naturally retain a common angular sign for so many geometric transit times. The slow memory supports an interpretation in which the bow layer samples a global, body-coupled displacement direction that is continuously forced by the stochastic kinetic background.
+
+\begin{table}
+\centering
+\caption{Dynamic invariance and multi-moment synchronization. The shape similarity is the absolute normalized inner product with the $\KnD=0.01$ mode. $S_1$ is defined in \cref{eq:synch}.}
+\label{tab:dynamic}
+\small
+\begin{tabular}{ccccccc}
+\toprule
+$\KnD$ & $\deltaten/R$ & $\tau_p^*$ & $\tau_p^*/t_\delta^*$ & shape similarity & $S_1$ & median $r_{qq'}$\\
+\midrule
+0.010 & 0.123 & 0.653 & 10.61 & 1.000 & 0.873 & 0.807\\
+0.025 & 0.224 & 0.724 & 6.46 & 0.972 & 0.706 & 0.555\\
+0.050 & 0.359 & -- & -- & -- & 0.529 & 0.369\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig11_dynamic_invariance_and_decoherence.pdf}
+\caption{Static broadening and dynamic organization. (a) Angular eigenfunctions at $\KnD=0.01$ and $0.025$, normalized by their sector means. Their absolute normalized inner product is $0.972$. (b) Collective memory compared with the mean standoff- and 10--90-layer passage times. (c) Coherent displacement gain $G_q$ of density, pressure, Mach number and translational temperature. (d) Multi-moment synchronization measures. The mean layer broadens strongly from $\KnD=0.01$ to $0.025$ while the angular displacement geometry and slow memory persist, but the synchronous participation of the non-density moments weakens. The $\KnD=0.05$ values are shown as diagnostic matched-filter outputs rather than as evidence of a resolved collective covariance.}
+\label{fig:dynamic}
+\end{figure}
+
+\subsection{Moment-selective dynamic decoherence}
+Persistence of the marker shape does not imply that every macroscopic moment continues to translate with equal amplitude. Equation~\eqref{eq:gain} separates this issue. At $\KnD=0.01$, the coherent gains are $G_\rho=0.828$, $G_p=0.781$, $G_M=0.702$ and $G_{T_{tr}}=0.690$. The four moments therefore participate in a nearly common displacement, with density and pressure slightly closer to the marker than Mach number and translational temperature. The first standardized multi-moment component contains $87.3\%$ of amplitude variance, its correlation with the marker is $0.886$, and the median pairwise moment correlation is $0.807$.
+
+At $\KnD=0.025$, the displacement coordinate remains resolved but the participation hierarchy becomes much stronger. The density and pressure gains decrease to $0.631$ and $0.575$, while the Mach-number and translational-temperature gains fall to $0.367$ and $0.312$. The first multi-moment component now contains $70.6\%$ of the variance and the median cross-moment correlation decreases to $0.555$. Thus the front geometry remains collective while the thermodynamic response becomes less synchronous. This behavior is distinct from the static variable-dependent scale hierarchy documented in the companion paper: here the separation is measured in the temporal amplitudes of a common displacement template, not in parameter-dependent mean profiles.
+
+The phase portraits in \cref{fig:phase} make this distinction visible without energy-ranking the fields. Density remains closely slaved to the marker at $\KnD=0.01$ and $0.025$, whereas the translational-temperature cloud broadens and rotates toward weak correlation at $0.025$. At $\KnD=0.05$, neither phase portrait provides a robust common-coordinate signature under the full inference criteria. The physically conservative conclusion is therefore progressive \emph{moment-selective decoherence}: early rarefaction preserves a slow compression-coordinate geometry, but velocity--sound-speed and thermal adjustments increasingly acquire independent fluctuations and relaxation content.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig12_multimoment_phase_portraits.pdf}
+\caption{Standardized phase portraits of marker displacement $a_m$ against density and translational-temperature equivalent displacement amplitudes. The density relation remains narrow at $\KnD=0.01$ and $0.025$, while the thermal relation loses coherence more rapidly. The $\KnD=0.05$ panels are diagnostic matched-filter outputs; the covariance mode is not classified as resolved there.}
+\label{fig:phase}
+\end{figure}
+
+\subsection{What can be concluded beyond $\KnD=0.025$}
+A non-detection is meaningful only when the analysis could have detected a mode of relevant size. Sliding-window and injection tests are summarized in \cref{fig:limits}. The $\KnD=0.025$ mode passes the strict window criterion in six of nine independent overlapping windows. At $\KnD=0.1$, only two early windows pass, whereas the complete record is ambiguous. No windows pass at $\KnD=0.05$, $0.075$ or $0.15$ under the combined criterion.
+
+The injection test uses the $\KnD=0.01$ shape and time scale with the measured noise covariance of each case. At $\KnD=0.025$, detection power at the reference amplitude is 0.89 and the interpolated 90\% threshold is $U_{90}/A_{ref}=1.03$. For $\KnD=0.05$ and $0.075$, the thresholds rise to 5.0 and 5.33. At $\KnD=0.1$ and $0.15$, 90\% power is not reached even at six times the reference amplitude. Consequently, the data beyond $\KnD=0.025$ cannot exclude persistence of a low-Knudsen-sized mode. The correct result is resolved emergence at two near-continuum states, not demonstrated disappearance with rarefaction.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig10_identifiability_limits.pdf}
+\caption{Persistence and detectability limits. (a) Sliding-window $\Delta AIC_c$; black stars denote windows passing the combined model-selection, LOOCV, shape, far-angle and PSD criteria. (b) Detection power after injecting the $\KnD=0.01$ collective mode into the measured noise of each case. (c) Amplitude required for 90\% detection relative to the reference low-Knudsen amplitude. Values above unity mean that the record cannot exclude a mode as small as the resolved reference.}
+\label{fig:limits}
+\end{figure}
+
+\section{Discussion}
+\subsection{A slow stochastic coordinate, not a dominant instability}
+The analysis identifies two apparently contradictory facts. The instantaneous shock-attached fields are high rank, yet a reproducible angular displacement exists. There is no contradiction because energetic dominance and dynamic organization are different properties. The translation template accounts for only $1$--$5\%$ of raw instantaneous variance, but its amplitude is correlated across distant angles, across independent Knudsen-number records and across multiple macroscopic moments. The coordinate is therefore best understood as a weak slow direction embedded in a much larger broadband kinetic state space.
+
+The separation of time scales is central. At the two resolved conditions the memory survives for $6.5$--$10.6$ passages across the mean 10--90 layer and about three passages across the standoff distance. The response is consequently slower than local profile crossing and is coupled over a large fraction of the bow geometry. This combination of low energy, long memory and broad spatial participation is characteristic of a noise-excited slow coordinate rather than a dominant deterministic oscillation.
+
+No growing DMD eigenvalue was detected in the common-200 sequences, but this empirical observation is not a linear-stability proof. A useful conceptual model is
+\begin{equation}
+ \frac{\partial q'}{\partial t}=\mathcal L_k q'+\eta(t),
+ \label{eq:stochastic_operator}
+\end{equation}
+where $\mathcal L_k$ is a stable kinetic linear operator and $\eta$ is molecular forcing. Even when every eigenvalue of $\mathcal L_k$ is stable, a weakly damped or non-normal response can acquire a finite stationary covariance. In an ideal linear stochastic description that covariance satisfies
+\begin{equation}
+ \mathcal L_k\bm C+\bm C\mathcal L_k^\dagger+\bm Q=0,
+ \label{eq:lyap}
+\end{equation}
+where $\bm Q$ is the forcing covariance. The present work estimates a projected macroscopic part of $\bm C$; it does not identify $\mathcal L_k$ or $\bm Q$ separately.
+
+\subsection{Dynamic invariance is distinct from mean similarity}
+The companion paper \citep{RoohiShoja2026Mean} asks whether the \emph{mean} rarefied bow layer can be represented by one shifted and broadened profile across parameter space. It reports mean inflation, variable-specific length scales and breakdown of universal static similarity. The present result is complementary and non-redundant. Between $\KnD=0.01$ and $0.025$ the mean density width increases by $82\%$, yet the normalized displacement eigenfunction and convective memory remain approximately invariant. The dynamic coordinate is therefore not a trivial restatement of the mean profile collapse. It describes how the instantaneous layer fluctuates about each mean state.
+
+This separation suggests a two-level reduced description. The first level is a slowly varying mean geometry parameterized by rarefaction, as quantified in the companion study. The second is a stochastic displacement amplitude that acts on the local mean gradients. Such a model has the schematic form
+\begin{equation}
+ q(s,\theta,t;\KnD)
+ =\mean q(s,\theta;\KnD)
+ -a(t;\KnD)g(\theta;\KnD)\partial_s\mean q
+ +q'_\perp,
+ \label{eq:twolevel}
+\end{equation}
+where $q'_\perp$ is the high-rank residual. The present data show that $g$ changes much less rapidly than $\mean q$ between the two resolved Knudsen numbers. This is precisely why a weak coordinate can remain dynamically recognizable even as the mean layer broadens substantially.
+
+\subsection{Moment-selective displacement and relaxation}
+The coherent gains reveal a hierarchy that is hidden by marker-only analysis. Density is the variable used to define the half-jump centre, so a strong density gain is expected, but pressure follows almost as closely. This is physically consistent with a compression displacement in which density and translational energy jointly alter pressure. Mach number is more weakly coupled because it depends on both velocity deceleration and the local sound speed. Translational temperature is weakest at $\KnD=0.025$, consistent with thermal adjustment being distributed over a broader relaxation region than the density compression.
+
+The key point is not simply that the correlations decrease. The angular displacement shape remains stable while the relative moment amplitudes separate. Thus early rarefaction does not first destroy the geometric coordinate; it first reduces the degree to which all moments are slaved to that coordinate. We refer to this behavior as moment-selective dynamic decoherence. It is a temporal analogue of multi-scale relaxation, but it is measured from synchronized fluctuation amplitudes rather than from mean thicknesses. The result provides a more specific physical answer than ``the shock becomes diffuse'': the compression geometry remains organized, while thermal and velocity--sound-speed responses acquire increasingly independent dynamics.
+
+\subsection{Relation to kinetic stability theory}
+The kLST framework of \citet{Karpuzcu2026} linearizes the Boltzmann--BGK equation about one-dimensional normal shocks and demonstrates that non-Maxwellian velocity distributions shift the eigenspectrum toward less stable regions. Their calculation concerns planar argon shocks at $M_\infty\leq4$ and deterministic spanwise perturbations, whereas the present calculation concerns stochastic, curved, body-coupled nitrogen flow at $M_\infty=10$. Direct equality between their eigenmodes and the present covariance mode would therefore be unjustified.
+
+The two studies nevertheless define a useful next step. Along the stagnation line, one may construct a locally planar kinetic base state and determine whether its least-damped response has a macroscopic projection proportional to $-\partial_s\mean q$. Agreement in spatial shape and decay time would support the interpretation of the measured coordinate as stochastic excitation of a stable kinetic response. Disagreement would be equally informative, indicating that curvature, wall coupling or non-normal forcing is essential. The present displacement template supplies the observable against which such a theory should be tested.
+
+\subsection{Implications for particle-data modal analysis}
+The physical-support audit provides a general warning for registered particle fields. A map can be numerically smooth and produce a large singular value while representing repeated extrapolated values rather than fluid motion. Support must be enforced before interpolation, and modal energy must be audited spatially before it is interpreted. This issue is especially acute near curved walls, moving fronts and adaptive point clouds.
+
+A second warning is that finite-particle noise is not white. Snapshot accumulation, particle persistence and adaptive sampling produce correlated feature error. Group averaging after feature extraction would not reproduce the statistics of a nonlinear marker; the fields must be averaged first and the marker re-extracted. The attenuation function in \cref{eq:attenuation} then permits persistent and sampling components to be compared on the same footing. The combined use of coarse graining, out-of-sample prediction, synthetic controls and full-field matched filtering is more informative than applying POD, DMD or SPOD alone.
+
+For reduced modelling, \cref{eq:twolevel} suggests that one should not seek a globally low-rank representation of every instantaneous field. A more efficient strategy is to represent the parameterized mean layer, the slow displacement amplitude and the broadband residual separately. Density and pressure may share a displacement coordinate over the near-continuum range, whereas Mach number and thermal variables require additional latent coordinates or relaxation states.
+
+\subsection{Limitations and scope of the conclusions}
+The study uses one body shape, Mach number, wall condition and nitrogen model. Vibrational excitation and chemistry are omitted. Absolute fluctuation amplitudes depend on simulator particle weight, sampling duration and output cadence; they are not universal molecular fluctuation levels. The mode is resolved only at $\KnD=0.01$ and $0.025$. Power analysis shows that the higher-Knudsen records cannot exclude a mode of comparable low-Knudsen amplitude, so the manuscript does not claim disappearance or a critical Knudsen number.
+
+The full-field template is a first-order translation model and explains a small fraction of unconditioned variance. Curvature changes, width fluctuations and moment-specific relaxation can contribute additional coherent coordinates. Direct analysis of velocity distribution functions would be needed to connect the macroscopic coordinate rigorously to a kinetic eigenmode, resolvent mode or collision-mediated relaxation mechanism. Finally, the two-dimensional cylinder omits spanwise variations. Extending the method to three-dimensional bow shocks would require separating azimuthal displacement, corrugation and body-scale global modes.
+
+\section{Conclusions}
+Time-resolved DSMC fields of Mach-10 nitrogen flow over a circular cylinder were analysed to distinguish a physical bow-layer displacement from correlated particle sampling fluctuations. The principal conclusions are as follows.
+\begin{enumerate}[leftmargin=1.6em]
+\item Shock-attached interpolation must respect physical support. Solid-side nearest-neighbour filling produced false leading POD energies of order $40$--$50\%$. After gas-domain clipping, the leading combined-state energy is only $1.1$--$4.3\%$ and 146--172 modes are required for $90\%$ variance.
+\item A reproducible physical angular mode is resolved at $\KnD=0.01$ and $0.025$. It is same-signed over the upstream sector, has positive far-angle covariance and retains memory $\tau_p^*=0.653$ and $0.724$.
+\item The mean 10--90 density width increases by $82\%$ between the two resolved states, while the angular modes retain an absolute normalized inner product of $0.972$. The collective memory spans $6.5$--$10.6$ layer-passage times and about three standoff-passage times. Static broadening therefore occurs without immediate loss of the slow displacement geometry.
+\item The coordinate is recovered independently in the complete density, pressure, Mach-number and translational-temperature fields. Density and pressure retain the strongest coherent displacement gains. As $\KnD$ increases from $0.01$ to $0.025$, the gains of Mach number and translational temperature decrease much more rapidly, and the leading four-moment synchronization fraction falls from $0.873$ to $0.706$.
+\item The resulting physics is moment-selective dynamic decoherence: early rarefaction preserves the slow compression-coordinate geometry but weakens synchronous velocity--sound-speed and thermal participation. This temporal result is distinct from the mean inflation and parameter-space similarity reported in the companion arXiv paper.
+\item The collective coordinate is weak, explaining only $1$--$5\%$ of raw instantaneous field variance. It is a slow coherent direction embedded in broadband kinetic fluctuations, not a dominant POD/DMD mode and not evidence of linear instability.
+\item At $\KnD\geq0.05$, statistical power deteriorates too rapidly to demonstrate disappearance. The defensible result is the existence and multi-moment validation of a slow near-continuum collective coordinate, together with quantitative bounds on its identifiability.
+\end{enumerate}
+
+\section*{Funding}
+This research received no specific grant from any funding agency, commercial or not-for-profit sectors.
+
+\section*{Declaration of interests}
+The authors report no conflict of interest.
+
+\section*{Author contributions}
+A.S.-S. performed the DS2V production simulations, curated the time-resolved data, implemented campaign-level post-processing and contributed to the physical analysis and first manuscript draft. E.R. conceived and supervised the study, developed the noise-separation and full-field interpretation, and led manuscript revision. Both authors reviewed and approved the manuscript. E.R. is the corresponding author.
+
+\section*{Data availability}
+A Git-ready reproducibility archive containing the manuscript source, processed summary data, covariance and template-analysis scripts, figure-generation code and environment specifications accompanies this draft. The public repository URL will be inserted before submission. Raw DS2V snapshot files are not placed in Git because of their multi-gigabyte size; a complete manifest and instructions for reproducing the processed data from the archived raw paths are included.
+
+\appendix
+\section{Support and registration diagnostics}
+The support audit in \cref{fig:support} was repeated for density, Mach number, pressure and both temperature fields. The strongest false condensation occurred in the density field at $\KnD=0.25$ and the rotational-temperature field at $\KnD=0.5$--1. Across the full audit, 88--99.8\% of the apparent leading-mode energy in the most affected cases lay in the non-physical attached support. Corrected results were insensitive to physical buffers $s/R=0$, 0.02 and 0.05 within the retained gas region. The common-200 comparisons use $s/R\geq0.02$.
+
+\section{Statistical decision rules}
+The covariance model is not accepted from $\Delta AIC_c$ alone. A resolved classification requires: (i) positive bootstrap model preference; (ii) lower leave-one-group-size-out error for the physical-plus-noise model; (iii) positive far-angle covariance; (iv) a smooth displacement-like mode; (v) controlled false detection under noise-only synthetic data; and (vi) a small correction in the PSD-constrained covariance fit. This combined rule is why the nominal positive $\Delta AIC_c$ at $\KnD=0.05$ is rejected.
+
+The corrected injection analysis uses a combined detection criterion rather than raw negative eigenvalue mass of the unconstrained covariance. Under this rule the noise-only false-positive rate is zero in the tested cases. The $\KnD=0.025$ record has power 0.89 at the reference amplitude, while the transitional records are calibration-limited as described in \cref{fig:limits}.
+
+\section{Detailed full-field moment diagnostics}
+\Cref{tab:fullfielddetail} reports the full-field metrics from which the coherent gains are formed. The amplitude standard deviations are expressed as equivalent radial displacement divided by $R$. The projection fraction is the median squared weighted spatial correlation of the instantaneous field with the translation template; it is not a fraction of thermodynamic energy.
+
+\begin{center}
+\captionof{table}{Detailed displacement-template results. Brackets give 95\% moving-block intervals for field--marker correlation.}
+\label{tab:fullfielddetail}
+\scriptsize
+\begin{tabular}{ccccccc}
+\toprule
+$\KnD$ & variable & $r(a_q,a_m)$ & 95\% interval & $\sigma_{a_q}/R$ & median projection (\%) & $G_q$\\
+\midrule
+0.010 & $\rho$ & 0.946 & [0.921,0.962] & $4.82\times10^{-4}$ & 5.29 & 0.828\\
+      & $p$     & 0.901 & [0.845,0.928] & $4.77\times10^{-4}$ & 4.03 & 0.781\\
+      & $M$     & 0.755 & [0.670,0.821] & $5.12\times10^{-4}$ & 2.30 & 0.702\\
+      & $T_{tr}$& 0.707 & [0.599,0.777] & $5.37\times10^{-4}$ & 1.24 & 0.690\\
+\addlinespace
+0.025 & $\rho$ & 0.790 & [0.723,0.847] & $6.81\times10^{-4}$ & 2.37 & 0.631\\
+      & $p$     & 0.727 & [0.652,0.788] & $6.74\times10^{-4}$ & 1.60 & 0.575\\
+      & $M$     & 0.395 & [0.253,0.512] & $7.90\times10^{-4}$ & 1.73 & 0.367\\
+      & $T_{tr}$& 0.273 & [0.155,0.371] & $9.71\times10^{-4}$ & 0.97 & 0.312\\
+\addlinespace
+0.050 & $\rho$ & 0.183 & [0.054,0.340] & $6.47\times10^{-4}$ & 0.67 & 0.087\\
+      & $p$     & 0.510 & [0.428,0.605] & $9.89\times10^{-4}$ & 0.77 & 0.369\\
+      & $M$     & 0.325 & [0.179,0.433] & $1.09\times10^{-3}$ & 1.06 & 0.260\\
+      & $T_{tr}$& 0.164 & [0.034,0.284] & $8.00\times10^{-4}$ & 0.46 & 0.096\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Full-record covariance inference across the transition range}
+The complete-record results in \cref{tab:fullcov} explain why positive nominal model preference is insufficient. The $\KnD=0.05$ and $0.075$ fits have positive $\Delta AIC_c$, but their two-component LOOCV ratios exceed unity and their bootstrap far-angle intervals include zero. At $0.10$, the nominal time scale has a very broad bootstrap upper tail. These cases are therefore not classified as persistent physical modes.
+
+\begin{center}
+\captionof{table}{Full-record correlated-noise diagnostics for the transition-range cases. $R_{cv}$ is the two-component/noise-only LOOCV ratio and $\epsilon_{PSD}$ is the relative PSD correction.}
+\label{tab:fullcov}
+\scriptsize
+\begin{tabular}{cccccccc}
+\toprule
+$\KnD$ & $\Delta AIC_c$ & bootstrap interval & $R_{cv}$ & $\tau_p^*$ & $r_{unif}$ & far-angle interval & $\epsilon_{PSD}$\\
+\midrule
+0.025 & 59.1 & [29.0,64.4] & 0.58 & 0.724 & 0.876 & [0.120,0.287] & $<10^{-12}$\\
+0.050 & 18.0 & [1.9,37.5] & 3.74 & 0.280 & 0.767 & [-0.002,0.089] & 0.539\\
+0.075 & 36.4 & [-1.8,58.5] & 1.50 & 0.466 & 0.644 & [-0.001,0.108] & 0.152\\
+0.100 & 18.9 & [-16.9,51.7] & 1.16 & 1.007 & 0.584 & [-0.031,0.112] & 0.019\\
+0.150 & -5.0 & [-8.2,12.9] & 18.77 & 0.210 & 0.475 & [-0.028,0.049] & 0.836\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Derivation of the coherent-gain and memory diagnostics}
+For completeness, the least-squares slope of a field-equivalent displacement $a_q$ on the marker amplitude $a_m$ is
+\begin{equation}
+ \widehat G_q=\arg\min_G\sum_t(a_q-Ga_m)^2
+ =\frac{\operatorname{cov}(a_q,a_m)}{\operatorname{var}(a_m)},
+\end{equation}
+which gives \cref{eq:gain}. The metric combines correlation and relative amplitude. It is not an energy fraction and can therefore remain appreciable when the translation template explains little of the total unconditioned variance.
+
+The memory ratios in \cref{eq:passage} use only body-scale convective normalization. At $\KnD=0.01$, $\deltaten/D=0.0615$ and $\scenter/D=0.231$, giving $\tau_p^*/t_\delta^*=10.61$ and $\tau_p^*/t_s^*=2.83$. At $\KnD=0.025$, the corresponding ratios are $6.46$ and $3.09$. These values are descriptive comparisons, not universal constants or fitted scaling laws.
+
+\section{Separation from the companion mean-flow analysis}
+The companion manuscript \citep{RoohiShoja2026Mean} uses converged mean fields across Mach- and Knudsen-number sweeps. Its principal observables are mean front location, mean thickness, variable-specific static relaxation lengths, profile registration and POD across operating conditions. The present paper uses consecutive outputs at fixed operating conditions. Its principal observables are temporal marker covariance, autoregressive memory, angular eigenfunctions, full-field equivalent displacement amplitudes, sliding-window persistence and injection-based detectability. No temporal covariance, memory, coherent-gain or multi-moment synchronization result in the present paper is reported in the companion work.
+
+\bibliographystyle{jfm}
+\bibliography{references}
+\end{document}

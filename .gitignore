@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.aux
+*.blg
+*.log
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+.DS_Store
+raw_data/
+*_DS2FF.DAT
+attached_field_cache.npz

@@ -1,0 +1,31 @@
+{
+  "paths": {
+    "results_root": "PATH/TO/ALL_KN_FINAL_ANALYSIS"
+  },
+  "geometry": {
+    "diameter_m": 0.3048
+  },
+  "analysis": {
+    "common_n": 200,
+    "variables": ["D", "MA", "TTR", "TRT", "P"],
+    "pod": {
+      "theta_min": 120,
+      "theta_max": 179,
+      "ntheta": 60,
+      "xi_min": -1,
+      "xi_max": 4,
+      "nxi": 260,
+      "physical_wall_buffer_R": 0.02,
+      "marker_wall_exclude_R": 0.25
+    }
+  },
+  "cases": [
+    {
+      "label": "Kn0p01",
+      "kn": 0.01,
+      "dt_star": 0.288,
+      "pattern": "PATH/TO/Kn=0.01/DS2FF/*_snapshot_*_DS2FF.DAT",
+      "log_pattern": "PATH/TO/Kn=0.01/MODAL_OUTPUT_LOG*.csv"
+    }
+  ]
+}
