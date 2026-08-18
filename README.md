@@ -15,6 +15,10 @@ The companion mean-flow paper analyzes rarefaction-induced bow-shock inflation a
 
 This repository contains the distinct time-resolved analysis: physical-domain support auditing, temporal coarse graining, correlated-noise covariance inference, collective angular displacement, full-field translation-template validation, multi-moment synchronization, sliding-window persistence, and injection-based detection limits.
 
+Manuscript candidates and running DSMC controls are tracked in
+[`RESEARCH_STATUS.md`](RESEARCH_STATUS.md).  They remain outside the default
+manuscript until their pre-registered gates are complete.
+
 ## Main physical result
 
 Between `Kn_D=0.01` and `0.025`, the mean 10-90 density width increases by 82%, while the normalized collective angular mode retains an absolute normalized inner product of 0.972 and an order-one convective memory. Density and pressure remain strongly coupled to the common displacement; Mach number and translational temperature progressively decouple. The coordinate is weak in raw variance and is interpreted as a noise-excited slow response, not a dominant instability.
