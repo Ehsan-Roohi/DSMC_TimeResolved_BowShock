@@ -1,0 +1,138 @@
+\section{Configuration and analysis}
+\subsection{DSMC data and nondimensionalization}
+The configuration is two-dimensional Mach-10 nitrogen flow over a circular cylinder of diameter $D=\SI{0.3048}{m}$. The freestream and wall temperatures are $T_\infty=\SI{200}{K}$ and $T_w=\SI{500}{K}$. Gas--gas collisions use the variable-hard-sphere model and the standard DS2V rotational nonequilibrium treatment. Vibrational excitation and chemistry are not included, so the gas should be interpreted as a rotationally relaxing nitrogen model rather than a complete thermochemical representation. A calorically perfect $\gamma=1.4$ normal-shock estimate gives $T_2\simeq\SI{4.1e3}{K}$ at $M_\infty=10$, comparable with the nitrogen characteristic vibrational temperature $\theta_v\simeq\SI{3371}{K}$. The equilibrium harmonic-oscillator estimate
+\begin{equation}
+ \frac{c_{v,v}}{R}=\frac{x^2e^x}{(e^x-1)^2},\qquad x=\frac{\theta_v}{T},
+\end{equation}
+gives $c_{v,v}/R\simeq0.95$ at this temperature. Vibrational energy could therefore introduce an additional relaxation coordinate in real nitrogen \citep{MillikanWhite1963,Park1988,Bertolotti1998}; the present conclusions are restricted to the rotational model used by DS2V. The Knudsen number is
+\begin{equation}
+ \KnD=\frac{\lambda_\infty}{D},
+\end{equation}
+where $\lambda_\infty$ is the freestream mean free path. Time is reported as $\tstar=tU_\infty/D$.
+
+The geometry, molecular model and statistically converged mean fields are shared with the companion mean-flow paper \citep{RoohiShoja2026Mean}, but the data object analysed here is different. The companion work treats one converged field per operating condition and asks how the parameterized mean family collapses. Here each operating condition supplies a consecutive temporal record, and no parameter-to-parameter POD mode is interpreted dynamically. This separation is important because a compact parameterized mean family may coexist with high-dimensional instantaneous fluctuations, while a weak coherent coordinate can remain invisible to energy-ranked field POD.
+
+For the time-resolved campaign, each stored macroscopic field is a short block average accumulated after the preceding output reset; the accumulator is reset after every stored field. The files are therefore not overlapping moving averages. Adjacent blocks remain correlated because the simulator-particle state is continuous across outputs, which is why the sampling component is not assumed white. The analysis uses the measured block-centre time from the output logs rather than treating the file index as physical time.
+
+Nine Knudsen numbers are considered. Every case contains at least 200 consecutive macroscopic fields; the longer records are used for stationarity, covariance and power analyses, whereas exactly 200 snapshots are used for direct field-POD comparison. The output cadence is not identical because the datasets were produced in staged campaigns. Every autoregressive and spectral quantity is therefore evaluated with the measured $\Delta\tstar$ of its own record. Quantitative memory comparisons are restricted to the two resolved near-continuum cases, whose cadences are similar ($0.288$ and $0.240$); the coarser high-Knudsen records are used only for detectability bounds and are not used to infer a common frequency trend. \Cref{tab:data} summarizes the data and the mean density half-jump geometry extracted below.
+
+\subsubsection{Relation to previously published cylinder data}
+A previous Physics of Fluids study reported neural-operator surrogates for the same cylinder geometry, including a fixed-Mach-10 cross-Knudsen study of steady argon fields and a separate nitrogen Mach-number study at fixed rarefaction \citep{RoohiShojaAzghadi2026PoF}. The present paper does not reuse the neural-network predictions, training metrics or wall-surrogate results from that work. More importantly, the prior paper did not analyse the consecutive nitrogen records used here as a stochastic time series. The new data object is the ordered sequence of non-overlapping DSMC output blocks, and the new observables are temporal covariance, relaxation memory, angular collectivity, detectability and full-field displacement amplitudes. The earlier publication is therefore cited as provenance for the broader cylinder campaign rather than as prior publication of the present dynamic results.
+
+\begin{table}
+\centering
+\caption{Time-resolved nitrogen DSMC data. $N_s$ is the number of available snapshots; $\Delta \tstar$ is the centre-to-centre output cadence. The final two columns are sector medians of the density half-jump location and 10--90 width.}
+\label{tab:data}
+\small
+\begin{tabular}{ccccc}
+\toprule
+$\KnD$ & $N_s$ & $\Delta \tstar$ & $\scenter/R$ & $\deltaten/R$ \\
+\midrule
+0.010 & 200 & 0.288 & 0.462 & 0.123 \\
+0.025 & 600 & 0.240 & 0.468 & 0.224 \\
+0.050 & 419 & 0.431 & 0.494 & 0.359 \\
+0.075 & 674 & 0.491 & 0.519 & 0.470 \\
+0.100 & 400 & 0.369 & 0.538 & 0.561 \\
+0.150 & 703 & 0.389 & 0.565 & 0.710 \\
+0.250 & 462 & 0.443 & 0.601 & 0.912 \\
+0.500 & 350 & 0.508 & 0.661 & 1.243 \\
+1.000 & 283 & 0.789 & 0.756 & 1.734 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Half-jump marker and physical shock-attached support}
+The upper upstream sector is represented by 60 body-normal rays over $120^\circ\leq\theta\leq179^\circ$. On each ray, $s=r-R$ measures distance from the cylinder wall. Robust upstream and downstream density plateaux define the normalized transition
+\begin{equation}
+ \rho^*(s,\theta,t)=\frac{\rho-\rho_{up}}{\rho_{down}-\rho_{up}}.
+\end{equation}
+The centre $\scenter(\theta,t)$ is the $\rho^*=0.5$ crossing and $\deltaten(\theta,t)$ is the distance between the 0.1 and 0.9 crossings. The attached coordinate is
+\begin{equation}
+ \xi=\frac{s-\scenter}{\deltaten}, \qquad -1\leq\xi\leq4.
+ \label{eq:xi}
+\end{equation}
+The common attached grid contains 260 points in $\xi$. A point is retained only when $s/R\geq0.02$; unsupported points are masked rather than filled from the nearest gas cell. \Cref{fig:geometry} illustrates the map, the 10--50--90 construction and a time-resolved marker field.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig01_geometry_marker.pdf}
+\caption{Shock-attached extraction at $\KnD=0.01$, shown as three vertically stacked panels for readability. (a) Mean normalized density, selected body-normal rays and the density half-jump centre; only gas-side support is sampled. (b) Stagnation-ray normalized density profile with the 10, 50 and 90\% transition markers. (c) Centred time-resolved half-jump location over the upstream analysis sector.}
+\label{fig:geometry}
+\end{figure}
+
+The physical-support restriction is essential rather than cosmetic. A preliminary registration route allowed portions of the attached window to lie inside the cylinder and filled them by nearest-neighbour remapping. As shown in \cref{fig:support}, the apparent leading density energy at $\KnD=0.25$ decreased from 38.8\% to 2.9\% after clipping; the corresponding rotational-temperature energy at $\KnD=0.5$ decreased from 47.9\% to 1.2\%. The original modes are concentrated at the solid-side edge of the attached coordinate. We retain this failed route as a negative control and use only physical-domain results below.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{fig02_physical_support_audit.pdf}
+\caption{Physical-support audit of the apparent low-rank structures. The left column shows leading modes from a registration that admitted solid-side points, the middle column isolates their non-physical contribution, and the right column shows the physical-domain result. The black curve in the original maps marks the $s/R=0.02$ support boundary. The collapse of $E_1$ demonstrates that solid-side remapping can create false coherence.}
+\label{fig:support}
+\end{figure}
+
+\subsection{Temporal coarse graining and correlated-noise covariance}
+To test whether marker fluctuations survive increased sampling, groups of $m=1,2,4,8,16$ consecutive density fields are averaged \emph{before} re-extracting $\scenter$ and $\deltaten$. Let $C_m$ denote the angular covariance of the marker obtained from group size $m$. The attenuation of an AR(1) process with lag-one coefficient $\phi$ under block averaging is
+\begin{equation}
+ A_m(\phi)=\frac{1}{m^2}\left[m+2\sum_{k=1}^{m-1}(m-k)\phi^k\right].
+ \label{eq:attenuation}
+\end{equation}
+We model the covariance as
+\begin{equation}
+ C_m=A_m(\phi_p)C_p+A_m(\phi_n)C_n,
+ \label{eq:covmodel}
+\end{equation}
+where $C_p$ is persistent physical covariance and $C_n$ is correlated marker/sampling covariance. The 10--90 width channel, which is much more sensitive to local sampling fluctuations, calibrates $\phi_n$; the centre channel then determines $\phi_p$, $C_p$ and $C_n$. The fitted covariance matrices are constrained to be positive semidefinite.
+
+Model preference is assessed by the small-sample corrected Akaike information criterion, leave-one-group-size-out covariance prediction, moving-block bootstrap, far-angle covariance for $|\theta-\theta'|\geq15^\circ$, and matched synthetic positive and negative controls. The physical time scale is
+\begin{equation}
+ \tau_p^*=-\frac{\Delta \tstar}{\log \phi_p}.
+\end{equation}
+A physical mode is called resolved only when the two-component model improves out-of-sample prediction, bootstrap model preference is positive, long-range covariance is positive, synthetic false detections remain controlled, and the PSD-constrained fit does not require a large correction.
+
+\subsection{Stationarity, window persistence and control experiments}
+A persistent covariance can be inferred only from a record that is sufficiently stationary over the analysis interval. For every full record we test the angular-mean centre and width for a linear trend and compare the variances of the first and second halves using Levene's test. The full $\KnD=0.025$ record gives centre trend and variance-stationarity $p$-values of 0.407 and 0.149, respectively; the corresponding width values are 0.752 and 0.098. The width variance is therefore close to the conventional 5\% threshold but does not reject stationarity. The full records at $\KnD=0.05$, $0.075$ and $0.15$ likewise show no significant centre trend. The $\KnD=0.10$ centre has a weaker margin ($p=0.070$), motivating the window-resolved interpretation used below.
+
+Stationarity of low-order statistics does not guarantee persistence of the inferred mode. We therefore repeat the complete covariance fit in overlapping 192-snapshot windows stepped by 48 snapshots. A window passes only if the physical-plus-noise model has $\Delta AIC_c>10$, improves LOOCV, recovers a mode aligned by at least 0.70 with the $\KnD=0.01$ reference, has positive far-angle covariance and requires less than 20\% PSD correction. This is a substantially stronger requirement than a positive in-sample likelihood gain.
+
+Two synthetic controls complete the calibration. The negative control simulates only the fitted correlated noise covariance and measures false detections. The positive control injects a known rank-one angular displacement with prescribed memory and measures detection power. For the final exclusion analysis, injection amplitude is varied from zero to six times the reference physical standard deviation, and Wilson intervals are used for power. This permits a non-detection to be described as either informative or sensitivity-limited. Percentile bootstrap intervals are reported as resampling distributions; because the estimator is biased and the record is correlated, the full-sample point estimate need not lie exactly inside a percentile interval. We therefore report the bootstrap median together with the interval whenever this distinction affects interpretation.
+
+\subsection{Pre-registered realization and particle-loading controls}
+A controlled $2\times2$ repeat campaign is being acquired at $\KnD=0.01$ to test whether the inferred response shape and memory are independent of one random realization and of simulator-particle loading. The four calculations use two independently initialized random seeds (104729 and 130363) and two particle levels ($N_p$ and $2N_p$), while holding the geometry, molecular model, adaptive-cell policy, timestep, non-overlapping accumulation length and target output cadence fixed. Each seed starts as a genuinely new DS2V run; a changed seed is never introduced by continuing a restart from the other realization. Interrupted continuations restore the complete saved random-number-generator state.
+
+The pre-registered comparisons are: (i) cross-seed alignment of the inferred angular mode; (ii) cross-seed agreement of $\tau_p^*$ and the density/pressure displacement-template correlations; (iii) change of raw and inferred covariance amplitudes with particle loading; and (iv) stability of mode shape and relaxation time as the sampling variance is reduced. These controls are in production at the time of this review draft and no outcome from them is used in the classifications reported below. A result paragraph with fixed fields for the four run identifiers and quantitative metrics is supplied with the reproducibility archive and will be activated only after the completed outputs pass the same blinded pipeline.
+
+\subsection{Full-field displacement-template validation}
+The marker analysis is tested against the complete macroscopic fields. For $q\in\{\rho,M,T_{tr},p\}$ we define
+\begin{equation}
+ \Psi_q(s,\theta)=-g(\theta)\frac{\partial \mean q}{\partial s},
+ \label{eq:template}
+\end{equation}
+where $g(\theta)$ is the normalized physical angular mode inferred at $\KnD=0.01$. The least-squares displacement amplitude is
+\begin{equation}
+ a_q(t)=\frac{\langle q'(t),\Psi_q\rangle_W}{\langle \Psi_q,\Psi_q\rangle_W},
+ \label{eq:amplitude}
+\end{equation}
+with a weight $W$ concentrated on the density-gradient core and normalized to give each retained ray equal total weight. This construction uses every supported field point rather than one crossing. Moving-block confidence intervals and circular time-shift tests quantify the correlation between $a_q(t)$ and the independently extracted marker amplitude. We also form conditional composites from the largest positive and negative marker events and compare them with the translation reconstruction.
+
+\subsection{Slow-memory and multi-moment synchronization diagnostics}
+The translation-template amplitudes permit two additional diagnostics that connect the statistical coordinate to flow physics. First, the regression or coherent displacement gain of moment $q$ relative to the marker is
+\begin{equation}
+ G_q=\frac{\operatorname{cov}(a_q,a_m)}{\operatorname{var}(a_m)}
+ =r_{qm}\frac{\sigma_{a_q}}{\sigma_{a_m}},
+ \label{eq:gain}
+\end{equation}
+where $a_m$ is the angular marker amplitude, $a_q$ is the equivalent displacement obtained from the full-field template, and $r_{qm}$ is their correlation. $G_q=1$ corresponds to a field translating with the same amplitude as the marker; $G_q<1$ indicates partial moment participation, additional relaxation or a reduced signal-to-noise ratio. Unlike the projection-energy fraction, $G_q$ retains the sign and amplitude of the coherent component and therefore provides a direct comparison between compression, pressure, velocity--sound-speed and thermal responses.
+
+Second, the four field amplitudes $a_\rho$, $a_p$, $a_M$ and $a_{T_{tr}}$ are standardized and assembled into a matrix $\bm A(t)$. The leading principal-component fraction
+\begin{equation}
+ S_1=\frac{\lambda_1(\operatorname{cov}\bm A)}{\operatorname{tr}(\operatorname{cov}\bm A)}
+ \label{eq:synch}
+\end{equation}
+measures the degree of multi-moment synchronization. A value near unity means that all four moments are organized predominantly by one common temporal amplitude. We also report the median pairwise moment correlation and the correlation of the first principal component with the marker.
+
+The collective memory is compared with two purely geometric convective times. Because $\tstar=tU_\infty/D$, passage across the mean 10--90 width and mean standoff corresponds to
+\begin{equation}
+ t_\delta^*=\frac{\deltaten}{D},\qquad
+ t_s^*=\frac{\scenter}{D}.
+ \label{eq:passage}
+\end{equation}
+The ratios $\tau_p^*/t_\delta^*$ and $\tau_p^*/t_s^*$ distinguish a slow collective response from fluctuations that decorrelate as structures are simply convected across the local layer.
