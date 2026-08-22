@@ -1,68 +1,56 @@
 # OpenFOAM MUI DSMC-NS Coupling
 
-This repository is the gated modernization of the one-way hybrid
-`rhoCentralFoam`/`dsmcFoam` method described by Darbandi and Roohi
-(*International Journal for Numerical Methods in Fluids*, 2013,
-DOI: `10.1002/fld.3769`).
+This repository modernizes the one-way hybrid `rhoCentralFoam`/`dsmcFoam`
+method described by Darbandi and Roohi (*International Journal for Numerical
+Methods in Fluids*, 2013, DOI: `10.1002/fld.3769`).
 
-The implementation is deliberately gated. No DSMC production case should be
-submitted until the installed OpenFOAM distribution, solver sources, MPI ABI,
-and MUI MPMD transport have passed Gate 0.
+Development is gated. A later physical or production case is never submitted
+until the smaller API, transport, conservation, and equilibrium checks pass.
 
-## Current branch: Gate 0
+## Current branch: Gate 1A
 
-Gate 0 performs two checks:
+Gate 0 passed on Unity with OpenFOAM-v2312, OpenMPI 4.1.6, and pinned MUI-v2.
+Gate 1A now verifies the exact fixed-interface contracts needed by Gate 1B:
 
-1. records the exact OpenFOAM/MPI/compiler installation visible in the Unity
-   batch environment; and
-2. compiles a pinned MUI-v2 smoke program and transfers five continuum state
-   fields (`rho`, `Ux`, `Uy`, `Uz`, and `T`) between two MPMD applications.
+1. the OpenFOAM continuum boundary-field API can publish face centres and
+   `rho`, `Ux`, `Uy`, `Uz`, and `T`;
+2. the installed v2312 DSMC API exposes `dsmcCloud::addNewParcel` to the
+   receiver adapter;
+3. the five fields cross a three-dimensional MUI interface at twelve fixed
+   face centres; and
+4. moment-exact Maxwellian particle packets reproduce mass, momentum, and
+   energy within `1e-12` relative error.
 
-It does **not** run a physical DSMC case. Its output determines the exact
-OpenFOAM adapter required for Gate 1 without guessing the OpenFOAM API or MPI
-communicator layout.
+This subgate does not run a physical flat plate and does not claim validation
+of wall heat flux or shear.
 
 ## Unity one-line submission
 
 ```bash
-ROOT=/project/pi_roohie_umass_edu/github_sync/OpenFOAM-MUI-DSMC-NS; if [ ! -d "$ROOT/.git" ]; then git clone --depth 1 --branch mui-dsmc-ns-gate0 --single-branch https://github.com/Ehsan-Roohi/DSMC_TimeResolved_BowShock.git "$ROOT"; fi; cd "$ROOT" && git fetch origin mui-dsmc-ns-gate0 && git checkout mui-dsmc-ns-gate0 && git pull --ff-only origin mui-dsmc-ns-gate0 && bash scripts/submit_unity_gate0.sh
+ROOT=/project/pi_roohie_umass_edu/github_sync/OpenFOAM-MUI-DSMC-NS; cd "$ROOT" && git fetch origin mui-dsmc-ns-gate1a && git checkout mui-dsmc-ns-gate1a && git pull --ff-only origin mui-dsmc-ns-gate1a && OPENFOAM_MODULE=openfoam/2312 bash scripts/submit_unity_gate1a.sh
 ```
 
-The command prints the Slurm job ID and the exact log path. Gate 0 is expected
-to finish in less than ten minutes. The first build can take longer if MUI has
-not yet been cached.
+The command requires the Gate 0 PASS artifacts in the same checkout. It prints
+the Slurm job ID and exact log path. Gate 1A is expected to finish within a few
+minutes.
 
-On Unity, the loader defaults to `openfoam/2312` and discovers a compatible
-`openmpi` module through the Lmod hierarchy. Explicit overrides are supported:
+## Gate sequence
 
-```bash
-OPENFOAM_MODULE=openfoam/2506 bash scripts/submit_unity_gate0.sh
-OPENFOAM_BASHRC=/path/to/OpenFOAM/etc/bashrc OPENMPI_MODULE=openmpi/5.0.3 bash scripts/submit_unity_gate0.sh
-```
+- Gate 0: environment, MPI ABI, and MUI MPMD transport — passed on Unity.
+- Gate 1A: v2312 adapter API plus fixed-interface equilibrium audit — current.
+- Gate 1B: short uniform-equilibrium run with the actual two solvers.
+- Gate 1C: flat-plate comparison against full DSMC uncertainty.
+- Gate 2: automatic interface with hysteresis and particle reuse.
+- Gate 3: conservative two-way coupling.
 
-Gate 0 now refuses to pass unless `wmake`, `rhoCentralFoam`, `dsmcFoam`,
-their installed source trees, and the MPI compiler/runtime are all visible.
-
-## Local execution
-
-```bash
-bash scripts/run_gate0.sh
-```
-
-## Gate policy
-
-See [docs/GATES.md](docs/GATES.md). Gate 1 will add a one-way
-`rhoCentralFoam -> dsmcFoam` interface only after Gate 0 identifies the actual
-Unity OpenFOAM family and version.
+See [docs/GATES.md](docs/GATES.md) and [docs/GATE1A.md](docs/GATE1A.md).
 
 ## Reproducibility
 
 - MUI is pinned to commit `b130c7a12aa8e7ac8d54e9188c4836342daed263`.
-- The probe records `WM_PROJECT`, `WM_PROJECT_VERSION`, solver executable and
-  source locations, MPI implementation, compiler versions, and Slurm context.
-- No long run is submitted by this branch.
+- Gate 1A refuses to run without the Gate 0 PASS artifact.
+- No production DSMC job is submitted by this branch.
 
 ## License
 
-GPL-3.0-or-later. MUI is fetched from its upstream repository and retains its
-upstream dual Apache-2.0/GPL-3.0 licensing.
+GPL-3.0-or-later. MUI retains its upstream dual Apache-2.0/GPL-3.0 licensing.
