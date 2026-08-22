@@ -25,7 +25,7 @@ communicator layout.
 ## Unity one-line submission
 
 ```bash
-ROOT=/project/pi_roohie_umass_edu/github_sync/OpenFOAM-MUI-DSMC-NS; if [ ! -d "$ROOT/.git" ]; then git clone --branch mui-dsmc-ns-gate0 --single-branch https://github.com/Ehsan-Roohi/DSMC_TimeResolved_BowShock.git "$ROOT"; fi; cd "$ROOT" && git fetch origin mui-dsmc-ns-gate0 && git checkout mui-dsmc-ns-gate0 && git pull --ff-only origin mui-dsmc-ns-gate0 && bash scripts/submit_unity_gate0.sh
+ROOT=/project/pi_roohie_umass_edu/github_sync/OpenFOAM-MUI-DSMC-NS; if [ ! -d "$ROOT/.git" ]; then git clone --depth 1 --branch mui-dsmc-ns-gate0 --single-branch https://github.com/Ehsan-Roohi/DSMC_TimeResolved_BowShock.git "$ROOT"; fi; cd "$ROOT" && git fetch origin mui-dsmc-ns-gate0 && git checkout mui-dsmc-ns-gate0 && git pull --ff-only origin mui-dsmc-ns-gate0 && bash scripts/submit_unity_gate0.sh
 ```
 
 The command prints the Slurm job ID and the exact log path. Gate 0 is expected
