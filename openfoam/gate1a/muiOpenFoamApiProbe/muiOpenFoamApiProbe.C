@@ -5,7 +5,7 @@
 
 #include "muiFoam/CouplingState.hpp"
 
-namespace
+namespace muiGate1a
 {
 
 void publishContinuumPatch
@@ -65,7 +65,7 @@ void addDsmcParcelThroughV2312Api
     );
 }
 
-} // namespace
+} // namespace muiGate1a
 
 int main(int, char**)
 {
