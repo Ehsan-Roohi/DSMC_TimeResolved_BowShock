@@ -9,6 +9,17 @@ if ! command -v sbatch >/dev/null 2>&1; then
     exit 2
 fi
 
+ACTIVE_JOB=$(
+    squeue -h -u "${USER:?USER is not set}" -o '%A|%j|%T' \
+    | awk -F'|' \
+        '$2 == "mui-of-g1b" && ($3 == "PENDING" || $3 == "RUNNING" || $3 == "COMPLETING") {print $1; exit}'
+)
+if [[ -n "$ACTIVE_JOB" ]]; then
+    printf 'ERROR: Gate 1B job %s is already active; refusing duplicate submission.\n' \
+        "$ACTIVE_JOB" >&2
+    exit 2
+fi
+
 if [[ ! -f "$ROOT/reports/gate1a_summary.json" ]] \
     || ! grep -q '"status": "PASS"' "$ROOT/reports/gate1a_summary.json"; then
     printf 'ERROR: Gate 1A has not passed in this checkout.\n' >&2

@@ -55,16 +55,28 @@ gate1b::State continuumState
     const Foam::volScalarField& rho,
     const Foam::volVectorField& rhoU,
     const Foam::volScalarField& rhoE,
-    const Foam::volScalarField& temperature
+    const Foam::volScalarField& temperature,
+    const Foam::volScalarField& pressure,
+    const Foam::volVectorField& velocity
 )
 {
     const Conserved totals = continuumConserved(mesh, rho, rhoU, rhoE);
     double volume = 0.0;
     double temperatureVolume = 0.0;
+    double physicalEnergy = 0.0;
     forAll(mesh.V(), celli)
     {
         volume += mesh.V()[celli];
         temperatureVolume += temperature[celli]*mesh.V()[celli];
+
+        // rhoE uses OpenFOAM's thermodynamic reference energy and can be
+        // negative near Tref.  MUI transports the reference-independent,
+        // absolute monatomic translational plus bulk kinetic energy instead.
+        physicalEnergy +=
+        (
+            1.5*pressure[celli]
+          + 0.5*rho[celli]*Foam::magSqr(velocity[celli])
+        )*mesh.V()[celli];
     }
 
     gate1b::State state;
@@ -73,7 +85,7 @@ gate1b::State continuumState
     state.uy = totals.momentum.y()/totals.mass;
     state.uz = totals.momentum.z()/totals.mass;
     state.temperature = temperatureVolume/volume;
-    state.specificEnergy = totals.energy/totals.mass;
+    state.specificEnergy = physicalEnergy/totals.mass;
     return state;
 }
 
@@ -82,7 +94,7 @@ double conservationError(const Conserved& current, const Conserved& initial)
     const double massError =
         std::abs(current.mass - initial.mass)/initial.mass;
     const double energyError =
-        std::abs(current.energy - initial.energy)/initial.energy;
+        std::abs(current.energy - initial.energy)/std::abs(initial.energy);
     const double momentumScale = std::max
     (
         initial.mass,
@@ -128,7 +140,16 @@ int main(int argc, char *argv[])
     mui::uniface3d interface("mpi://continuum/gate1b");
     const Conserved initial = continuumConserved(mesh, rho, rhoU, rhoE);
     const gate1b::State initialState =
-        continuumState(mesh, rho, rhoU, rhoE, T);
+        continuumState(mesh, rho, rhoU, rhoE, T, p, U);
+
+    Foam::Info<< "GATE1B_CONTINUUM_INITIAL"
+              << " rho=" << initialState.rho
+              << " U=(" << initialState.ux << ' ' << initialState.uy
+              << ' ' << initialState.uz << ')'
+              << " T=" << initialState.temperature
+              << " physical_specific_energy=" << initialState.specificEnergy
+              << " openfoam_reference_specific_energy="
+              << initial.energy/initial.mass << Foam::endl;
 
     if (!initialState.physical())
     {
@@ -340,7 +361,7 @@ int main(int argc, char *argv[])
 
         ++couplingStep;
         const gate1b::State localState =
-            continuumState(mesh, rho, rhoU, rhoE, T);
+            continuumState(mesh, rho, rhoU, rhoE, T, p, U);
         gate1b::pushState(interface, "continuum_", localState);
         interface.commit(couplingStep);
         const gate1b::State dsmcState =
