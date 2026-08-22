@@ -1,0 +1,22 @@
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+
+solvers
+{
+    "(rho|rhoU|rhoE)"
+    {
+        solver diagonal;
+    }
+
+    "(U|e)"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-12;
+        relTol          0;
+    }
+}

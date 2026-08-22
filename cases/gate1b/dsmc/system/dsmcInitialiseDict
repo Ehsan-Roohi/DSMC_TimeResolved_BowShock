@@ -1,0 +1,14 @@
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      dsmcInitialiseDict;
+}
+
+numberDensities
+{
+    Ar 1.024e22;
+}
+
+temperature 300;
+velocity    (100 0 0);

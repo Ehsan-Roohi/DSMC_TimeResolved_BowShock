@@ -21,16 +21,19 @@ Unity status: passed with OpenFOAM-v2312 and OpenMPI 4.1.6.
 - reproduce equilibrium mass, momentum, and energy within `1e-12` using a
   six-particle moment-exact Maxwellian quadrature.
 
-No physical CFD/DSMC case is submitted in Gate 1A.
+Unity status: passed with zero transfer error and `2.86e-16` maximum relative
+moment error.
 
 ## Gate 1B - actual solver uniform equilibrium
 
-- runtime continuum publisher inside `rhoCentralFoam`;
-- MUI-driven reservoir inflow model inside `dsmcFoam`;
-- identical fixed overlap geometry, gas model, and time synchronization;
-- no DSMC-to-continuum feedback; and
-- statistically stationary mass, momentum, and energy with no systematic
-  interface drift.
+- run derived, real v2312 `rhoCentralFoamMUI` and `dsmcFoamMUI` executables;
+- hand continuum density, velocity and temperature to a real DSMC cloud;
+- construct six moment-exact DSMC parcels in every periodic cell;
+- exchange continuum and DSMC states at every physical time step;
+- conserve mass, momentum and energy to `1e-10` relative in each solver; and
+- keep cross-solver macrostate mismatch below `1e-3` relative.
+
+This is a numerical integration gate, not a physical validation case.
 
 ## Gate 1C - flat-plate physical validation
 

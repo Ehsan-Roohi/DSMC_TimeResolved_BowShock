@@ -1,0 +1,25 @@
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+
+application         rhoCentralFoamMUI;
+startFrom           startTime;
+startTime           0;
+stopAt              endTime;
+endTime             1e-7;
+deltaT              1e-8;
+writeControl        timeStep;
+writeInterval       10;
+purgeWrite          0;
+writeFormat         ascii;
+writePrecision      12;
+writeCompression    off;
+timeFormat          general;
+timePrecision       10;
+runTimeModifiable   false;
+adjustTimeStep      no;
+maxCo               0.2;
+maxDeltaT           1e-8;

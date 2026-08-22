@@ -1,0 +1,18 @@
+FoamFile
+{
+    format ascii;
+    class volVectorField;
+    location "0";
+    object momentum;
+}
+dimensions [1 -2 -1 0 0 0 0];
+internalField uniform (0 0 0);
+boundaryField
+{
+    xMax { type cyclic; }
+    xMin { type cyclic; }
+    yMax { type cyclic; }
+    yMin { type cyclic; }
+    zMax { type cyclic; }
+    zMin { type cyclic; }
+}

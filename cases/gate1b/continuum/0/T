@@ -1,0 +1,19 @@
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      T;
+}
+
+dimensions      [0 0 0 1 0 0 0];
+internalField   uniform 300;
+boundaryField
+{
+    xMax { type cyclic; }
+    xMin { type cyclic; }
+    yMax { type cyclic; }
+    yMin { type cyclic; }
+    zMax { type cyclic; }
+    zMin { type cyclic; }
+}

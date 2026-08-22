@@ -1,5 +1,6 @@
 build/
 _deps/
+run/
 reports/*.log
 reports/*.txt
 reports/*.json
