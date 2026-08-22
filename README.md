@@ -32,6 +32,17 @@ The command prints the Slurm job ID and the exact log path. Gate 0 is expected
 to finish in less than ten minutes. The first build can take longer if MUI has
 not yet been cached.
 
+On Unity, the loader defaults to `openfoam/2312` and discovers a compatible
+`openmpi` module through the Lmod hierarchy. Explicit overrides are supported:
+
+```bash
+OPENFOAM_MODULE=openfoam/2506 bash scripts/submit_unity_gate0.sh
+OPENFOAM_BASHRC=/path/to/OpenFOAM/etc/bashrc OPENMPI_MODULE=openmpi/5.0.3 bash scripts/submit_unity_gate0.sh
+```
+
+Gate 0 now refuses to pass unless `wmake`, `rhoCentralFoam`, `dsmcFoam`,
+their installed source trees, and the MPI compiler/runtime are all visible.
+
 ## Local execution
 
 ```bash
