@@ -21,6 +21,7 @@ MUI_SRC="$MUI_SRC" DEPS_DIR="$DEPS_DIR" bash "$ROOT/scripts/prepare_mui.sh"
 
 cmake -S "$MUI_SRC" -B "$MUI_BUILD" \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_COMPILER="$(command -v mpic++)" \
     -DCMAKE_INSTALL_PREFIX="$MUI_PREFIX" \
     -DC_WRAPPER=OFF \
     -DFORTRAN_WRAPPER=OFF \
@@ -29,6 +30,7 @@ cmake --build "$MUI_BUILD" --target install --parallel "$BUILD_JOBS"
 
 cmake -S "$ROOT" -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_COMPILER="$(command -v mpic++)" \
     -DMUI_DIR="$MUI_PREFIX/MUI-2.0.0/share/MUI-2.0.0/cmake" \
     -DBUILD_MUI_GATE0=ON \
     -DBUILD_CORE_TESTS=ON
