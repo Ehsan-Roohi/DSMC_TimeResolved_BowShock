@@ -21,7 +21,7 @@ first_source_match()
     local pattern=$1
     if [[ -n "${WM_PROJECT_DIR:-}" && -d "${WM_PROJECT_DIR:-}" ]]; then
         find "$WM_PROJECT_DIR/applications" -type f -path "$pattern" -print 2>/dev/null \
-            | head -n 5
+            | sed -n '1,5p'
     else
         printf '%s\n' WM_PROJECT_DIR_NOT_SET
     fi
@@ -69,15 +69,15 @@ mpi_linkage()
     printf 'mpicxx=%s\n' "$(command_path mpic++)"
     printf 'mpirun=%s\n' "$(command_path mpirun)"
     if command -v mpic++ >/dev/null 2>&1; then
-        printf 'mpicxx_version=%s\n' "$(mpic++ --version 2>&1 | head -n 1)"
-        printf 'mpicxx_show=%s\n' "$(mpic++ -show 2>&1 | head -n 1 || true)"
+        printf 'mpicxx_version=%s\n' "$(mpic++ --version 2>&1 | sed -n '1p')"
+        printf 'mpicxx_show=%s\n' "$(mpic++ -show 2>&1 | sed -n '1p' || true)"
     fi
     if command -v mpirun >/dev/null 2>&1; then
-        printf 'mpirun_version=%s\n' "$(mpirun --version 2>&1 | head -n 1)"
+        printf 'mpirun_version=%s\n' "$(mpirun --version 2>&1 | sed -n '1p')"
     fi
     printf 'cmake=%s\n' "$(command_path cmake)"
     if command -v cmake >/dev/null 2>&1; then
-        printf 'cmake_version=%s\n' "$(cmake --version | head -n 1)"
+        printf 'cmake_version=%s\n' "$(cmake --version | sed -n '1p')"
     fi
     printf 'cxx=%s\n' "${CXX:-UNSET}"
     printf 'loaded_modules_begin\n'
