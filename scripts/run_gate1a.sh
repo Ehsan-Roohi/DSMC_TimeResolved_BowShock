@@ -6,12 +6,24 @@ REPORT_DIR=${REPORT_DIR:-"$ROOT/reports"}
 BUILD_DIR=${BUILD_DIR:-"$ROOT/build/gate1a"}
 mkdir -p "$REPORT_DIR"
 
+# The build is deliberately isolated in a child shell. Load OpenFOAM/MPI in
+# this runner as well so that the MPMD launcher remains on PATH afterwards.
+# shellcheck source=scripts/load_openfoam_if_needed.sh
+source "$ROOT/scripts/load_openfoam_if_needed.sh"
+
 BUILD_DIR="$BUILD_DIR" bash "$ROOT/scripts/build_gate1a.sh"
 
 EXE="$BUILD_DIR/mui_fixed_interface"
 LOG="$REPORT_DIR/gate1a_fixed_interface.log"
+MPI_LAUNCHER=${MPI_LAUNCHER:-$(command -v mpirun || true)}
 
-mpirun \
+if [[ -z "$MPI_LAUNCHER" || ! -x "$MPI_LAUNCHER" ]]; then
+    printf 'ERROR: mpirun is unavailable in the Gate 1A runner environment.\n' >&2
+    exit 127
+fi
+
+printf 'GATE1A_MPI_LAUNCHER=%s\n' "$MPI_LAUNCHER"
+"$MPI_LAUNCHER" \
     -np 1 "$EXE" mpi://continuum/fixedInterface continuum \
     : \
     -np 1 "$EXE" mpi://dsmc/fixedInterface dsmc \
