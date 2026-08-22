@@ -1,4 +1,5 @@
 EXE_INC = \
+    -I$(FOAM_APP)/solvers/discreteMethods/dsmc/dsmcFoam \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/lagrangian/basic/lnInclude \
     -I$(LIB_SRC)/lagrangian/DSMC/lnInclude \
