@@ -5,31 +5,39 @@
 Required before any OpenFOAM adapter is compiled:
 
 - exact OpenFOAM family and version recorded;
-- `rhoCentralFoam` or its installed successor located;
-- `dsmcFoam` executable and source located;
+- `rhoCentralFoam` and `dsmcFoam` executable and source trees located;
 - compiler and MPI ABI recorded;
-- pinned MUI builds with the same MPI wrapper;
+- pinned MUI builds with the same MPI wrapper; and
 - two MPMD applications exchange `rho`, `U`, and `T` without mismatch.
 
-Pass artifact: `reports/gate0_summary.json` with `"status": "PASS"` and
-`reports/unity_preflight.txt` containing the installed solver/source paths.
+Unity status: passed with OpenFOAM-v2312 and OpenMPI 4.1.6.
 
-## Gate 1 - one-way fixed interface
+## Gate 1A - fixed-interface API and moment audit
 
-Target: reproduce the 2013 method without manual data transfer.
+- compile the continuum boundary-field publisher contract against v2312;
+- compile and link the receiver contract through `dsmcCloud::addNewParcel`;
+- transfer five state fields at fixed three-dimensional face centres;
+- reject every non-finite or non-physical mapped state; and
+- reproduce equilibrium mass, momentum, and energy within `1e-12` using a
+  six-particle moment-exact Maxwellian quadrature.
 
-- continuum sender publishes face centres, `rho`, `U`, and `T`;
-- DSMC reservoir receives the fields and creates Maxwellian particles;
-- the first implementation uses a fixed overlap boundary;
-- no DSMC-to-continuum feedback;
-- no long production run.
+No physical CFD/DSMC case is submitted in Gate 1A.
 
-Pass criteria:
+## Gate 1B - actual solver uniform equilibrium
 
-- uniform-equilibrium transfer has no drift in mass, momentum, or energy;
-- mapped states are finite and physical at every receiving point;
-- flat-plate wall heat flux and shear agree with full DSMC within the full
-  DSMC 95% sampling interval or 3% normalized L2 error, whichever is larger.
+- runtime continuum publisher inside `rhoCentralFoam`;
+- MUI-driven reservoir inflow model inside `dsmcFoam`;
+- identical fixed overlap geometry, gas model, and time synchronization;
+- no DSMC-to-continuum feedback; and
+- statistically stationary mass, momentum, and energy with no systematic
+  interface drift.
+
+## Gate 1C - flat-plate physical validation
+
+- fixed interface independent of the full-DSMC result;
+- wall heat flux and shear compared with full DSMC; and
+- agreement inside the full DSMC 95% sampling interval or 3% normalized L2
+  error, whichever is larger.
 
 ## Gate 2 - automatic interface
 
@@ -37,7 +45,7 @@ Pass criteria:
 - activation/deactivation hysteresis;
 - particle reuse in retained DSMC cells;
 - particle creation only in newly activated cells;
-- overlap mismatch normalized by DSMC sampling uncertainty;
+- overlap mismatch normalized by DSMC sampling uncertainty; and
 - no dependence on a full-DSMC or experimental solution to position the
   interface.
 
@@ -46,5 +54,5 @@ Pass criteria:
 - block-averaged DSMC mass, momentum, and energy fluxes;
 - conservative RBF transfer to the continuum mesh;
 - relaxation applied only to statistically resolved flux windows;
-- global conservation audit and restart consistency;
+- global conservation audit and restart consistency; and
 - cylinder validation and parallel scaling study.
