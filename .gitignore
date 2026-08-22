@@ -3,4 +3,6 @@ _deps/
 reports/*.log
 reports/*.txt
 reports/*.json
+reports/*.capture
+openfoam/**/Make/linux*
 !reports/.gitkeep
