@@ -1,53 +1,57 @@
-# DSMC Time-Resolved Bow-Shock Dynamics
+# OpenFOAM MUI DSMC-NS Coupling
 
-Reproducibility archive for the manuscript:
+This repository is the gated modernization of the one-way hybrid
+`rhoCentralFoam`/`dsmcFoam` method described by Darbandi and Roohi
+(*International Journal for Numerical Methods in Fluids*, 2013,
+DOI: `10.1002/fld.3769`).
 
-**A slow collective displacement coordinate in a broadening rarefied hypersonic bow-shock layer**
+The implementation is deliberately gated. No DSMC production case should be
+submitted until the installed OpenFOAM distribution, solver sources, MPI ABI,
+and MUI MPMD transport have passed Gate 0.
 
-- **Ahmad Shoja-Sani** (first author)
-- **Ehsan Roohi** (corresponding author)
+## Current branch: Gate 0
 
-## Scientific scope
+Gate 0 performs two checks:
 
-The companion mean-flow paper analyzes rarefaction-induced bow-shock inflation and parameter-space similarity:
+1. records the exact OpenFOAM/MPI/compiler installation visible in the Unity
+   batch environment; and
+2. compiles a pinned MUI-v2 smoke program and transfers five continuum state
+   fields (`rho`, `Ux`, `Uy`, `Uz`, and `T`) between two MPMD applications.
 
-- E. Roohi and A. Shoja-Sani, *Rarefaction-induced inflation and similarity breakdown of hypersonic bow shocks over a circular cylinder*, arXiv:2605.17099 (2026).
+It does **not** run a physical DSMC case. Its output determines the exact
+OpenFOAM adapter required for Gate 1 without guessing the OpenFOAM API or MPI
+communicator layout.
 
-This repository contains the distinct time-resolved analysis: physical-domain support auditing, temporal coarse graining, correlated-noise covariance inference, collective angular displacement, full-field translation-template validation, multi-moment synchronization, sliding-window persistence, and injection-based detection limits.
-
-Manuscript candidates and running DSMC controls are tracked in
-[`RESEARCH_STATUS.md`](RESEARCH_STATUS.md).  They remain outside the default
-manuscript until their pre-registered gates are complete.
-
-## Main physical result
-
-Between `Kn_D=0.01` and `0.025`, the mean 10-90 density width increases by 82%, while the normalized collective angular mode retains an absolute normalized inner product of 0.972 and an order-one convective memory. Density and pressure remain strongly coupled to the common displacement; Mach number and translational temperature progressively decouple. The coordinate is weak in raw variance and is interpreted as a noise-excited slow response, not a dominant instability.
-
-## Repository layout
-
-- `manuscript/`: JFM LaTeX source, compiled PDF, figures, tables, and processed manuscript data.
-- `analysis/unified/`: all-Knudsen QC, registration, POD, temporal coarse-graining, and covariance scripts.
-- `analysis/final_statistical_gate/`: sliding-window and injection/exclusion analyses.
-- `analysis/displacement_template/`: full-field multi-moment displacement validation.
-- `processed_data/`: compact CSV outputs needed to reproduce manuscript figures and tables.
-- `docs/`: provenance, raw-data manifest, and interpretation notes.
-
-## Build the paper
+## Unity one-line submission
 
 ```bash
-cd manuscript
-latexmk -pdf main.tex
+ROOT=/project/pi_roohie_umass_edu/github_sync/OpenFOAM-MUI-DSMC-NS; if [ ! -d "$ROOT/.git" ]; then git clone https://github.com/Ehsan-Roohi/OpenFOAM-MUI-DSMC-NS.git "$ROOT"; fi; cd "$ROOT" && git fetch origin && git checkout gate0-unity-preflight && git pull --ff-only origin gate0-unity-preflight && bash scripts/submit_unity_gate0.sh
 ```
 
-If the system BibTeX alternative is broken, run:
+The command prints the Slurm job ID and the exact log path. Gate 0 is expected
+to finish in less than ten minutes. The first build can take longer if MUI has
+not yet been cached.
+
+## Local execution
 
 ```bash
-pdflatex main.tex
-bibtex main
-pdflatex main.tex
-pdflatex main.tex
+bash scripts/run_gate0.sh
 ```
 
-## Raw data
+## Gate policy
 
-The raw DS2V snapshots are multi-gigabyte text files and are not stored in GitHub. `docs/RAW_DATA_MANIFEST.md` records the required cases, counts, and expected naming convention. Edit `analysis/config.example.json` to point to the archived snapshots.
+See [docs/GATES.md](docs/GATES.md). Gate 1 will add a one-way
+`rhoCentralFoam -> dsmcFoam` interface only after Gate 0 identifies the actual
+Unity OpenFOAM family and version.
+
+## Reproducibility
+
+- MUI is pinned to commit `b130c7a12aa8e7ac8d54e9188c4836342daed263`.
+- The probe records `WM_PROJECT`, `WM_PROJECT_VERSION`, solver executable and
+  source locations, MPI implementation, compiler versions, and Slurm context.
+- No long run is submitted by this branch.
+
+## License
+
+GPL-3.0-or-later. MUI is fetched from its upstream repository and retains its
+upstream dual Apache-2.0/GPL-3.0 licensing.
