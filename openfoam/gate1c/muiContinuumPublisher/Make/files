@@ -1,0 +1,3 @@
+muiContinuumPublisher.C
+
+EXE = $(GATE1C_BUILD_DIR)/openfoam/muiContinuumPublisher

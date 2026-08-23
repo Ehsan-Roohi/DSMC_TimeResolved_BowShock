@@ -47,6 +47,11 @@ maximum cross-state error `8.96e-7`.  The machine-readable record is
 - agreement inside the full DSMC 95% sampling interval or 3% normalized L2
   error, whichever is larger.
 
+Implementation status: ready for Unity validation on branch
+`mui-dsmc-ns-gate1c`. The fixed `y=0.015 m` interface and continuum-to-DSMC
+reservoir mapping run before the independent full-DSMC reference. A PASS is
+not recorded until both heat-flux and shear criteria pass on Unity.
+
 ## Gate 2 - automatic interface
 
 - combined continuum-breakdown indicator;
