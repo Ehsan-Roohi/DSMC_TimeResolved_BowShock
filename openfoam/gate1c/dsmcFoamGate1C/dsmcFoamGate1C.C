@@ -57,8 +57,7 @@ Foam::label injectMappedReservoir
 
         const Foam::pointField::subField faceCentres = patch.faceCentres();
         const Foam::vectorField::subField faceAreas = patch.faceAreas();
-        const Foam::scalarField::subField faceAreaMagnitudes =
-            patch.magFaceAreas();
+        const Foam::scalarField& faceAreaMagnitudes = patch.magFaceAreas();
 
         forAll(patch, facei)
         {
