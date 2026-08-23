@@ -221,9 +221,19 @@ maxDeltaT           1e-7;
         + """fluxScheme Kurganov;
 ddtSchemes { default Euler; }
 gradSchemes { default Gauss linear; }
-divSchemes { default none; }
+divSchemes
+{
+    default none;
+    div(tauMC) Gauss linear;
+}
 laplacianSchemes { default Gauss linear corrected; }
-interpolationSchemes { default linear; }
+interpolationSchemes
+{
+    default linear;
+    reconstruct(rho) vanLeer;
+    reconstruct(U) vanLeerV;
+    reconstruct(T) vanLeer;
+}
 snGradSchemes { default corrected; }
 wallDist { method meshWave; }
 """,
