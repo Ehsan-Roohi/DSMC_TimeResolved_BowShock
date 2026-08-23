@@ -1,0 +1,21 @@
+{
+  "gate": "2",
+  "status": "PASS",
+  "unity_job": "63533453",
+  "openfoam_version": "v2312",
+  "case": "mach-4.65-rarefied-argon-flat-plate-transient-replay",
+  "indicator": "max(Kn_density,Kn_temperature,Kn_velocity)",
+  "activation_threshold": 0.05,
+  "deactivation_threshold": 0.03,
+  "frames": 9,
+  "kinetic_cells": 800,
+  "dynamic_activated_cells": 717,
+  "deactivated_cells": 717,
+  "retained_cell_events": 4914,
+  "particle_identity_reuse": true,
+  "creation_only_in_newly_activated_cells": true,
+  "maximum_overlap_mismatch_sigma": 0.48735170052,
+  "maximum_allowed_overlap_mismatch_sigma": 1.0,
+  "external_reference_used": false,
+  "full_dsmc_or_experiment_used_for_interface": false
+}

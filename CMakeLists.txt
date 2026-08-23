@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(OpenFOAMMUIDSMCNS VERSION 0.2.0 LANGUAGES CXX)
+project(OpenFOAMMUIDSMCNS VERSION 0.3.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BUILD_MUI_GATE0 "Build the MUI MPMD Gate-0 executable" ON)
 option(BUILD_MUI_GATE1A "Build the fixed-interface Gate-1A executable" OFF)
+option(BUILD_MUI_GATE3A "Build the conservative-flux Gate-3A executable" OFF)
 option(BUILD_CORE_TESTS "Build dependency-free core tests" ON)
 
 add_library(muiFoamCore INTERFACE)
@@ -26,9 +27,13 @@ if(BUILD_CORE_TESTS)
     add_executable(test_equilibrium tests/test_equilibrium.cpp)
     target_link_libraries(test_equilibrium PRIVATE muiFoamCore)
     add_test(NAME equilibrium_moment_packet COMMAND test_equilibrium)
+
+    add_executable(test_conservative_flux tests/test_conservative_flux.cpp)
+    target_link_libraries(test_conservative_flux PRIVATE muiFoamCore)
+    add_test(NAME conservative_flux_restart COMMAND test_conservative_flux)
 endif()
 
-if(BUILD_MUI_GATE0 OR BUILD_MUI_GATE1A)
+if(BUILD_MUI_GATE0 OR BUILD_MUI_GATE1A OR BUILD_MUI_GATE3A)
     find_package(MPI REQUIRED)
     find_package(MUI REQUIRED)
 endif()
@@ -56,4 +61,9 @@ endif()
 if(BUILD_MUI_GATE1A)
     add_executable(mui_fixed_interface src/gate1a/mui_fixed_interface.cpp)
     link_mui_target(mui_fixed_interface)
+endif()
+
+if(BUILD_MUI_GATE3A)
+    add_executable(mui_conservative_flux src/gate3a/mui_conservative_flux.cpp)
+    link_mui_target(mui_conservative_flux)
 endif()

@@ -33,12 +33,9 @@ moment error.
 - conserve mass, momentum and energy to `1e-10` relative in each solver; and
 - keep cross-solver macrostate mismatch below `1e-3` relative.
 
-This is a numerical integration gate, not a physical validation case.
-
 Unity status: passed in job `63484646` with 10 coupled steps, continuum
 conservation error `6.31e-34`, DSMC conservation error `5.71e-16`, and
-maximum cross-state error `8.96e-7`.  The machine-readable record is
-[`docs/results/gate1b_unity_63484646.json`](results/gate1b_unity_63484646.json).
+maximum cross-state error `8.96e-7`.
 
 ## Gate 1C - flat-plate physical validation
 
@@ -47,11 +44,9 @@ maximum cross-state error `8.96e-7`.  The machine-readable record is
 - agreement inside the full DSMC 95% sampling interval or 3% normalized L2
   error, whichever is larger.
 
-Unity status: passed in resume job `63489859` after the continuum and hybrid
-phases from job `63489379`. Heat-flux normalized L2 error was `0.3115` against
-a `0.3882` reference sampling threshold; shear error was `0.2598` against a
-`0.3602` threshold. The machine-readable record is
-[`docs/results/gate1c_unity_63489859.json`](results/gate1c_unity_63489859.json).
+Unity status: passed in resume job `63489859`. Heat-flux normalized L2 error
+was `0.3115` against a `0.3882` sampling threshold; shear error was `0.2598`
+against a `0.3602` threshold.
 
 ## Gate 2 - automatic interface
 
@@ -63,17 +58,28 @@ a `0.3882` reference sampling threshold; shear error was `0.2598` against a
 - no dependence on a full-DSMC or experimental solution to position the
   interface.
 
+Unity status: passed in job `63533453` across nine forward/reverse frames.
+There were 717 dynamic activations and 717 deactivations, retained particle
+identities were preserved, and the maximum activation mismatch was `0.4874`
+sampling standard deviations against an allowed value of 1.0. The record is
+[`docs/results/gate2_unity_63533453.json`](results/gate2_unity_63533453.json).
+
+## Gate 3A - conservative flux contract
+
+- MUI MPMD transport of block-integrated mass, momentum, and energy fluxes;
+- conservative RBF transfer to a different continuum face layout;
+- relaxation only for statistically resolved flux windows;
+- global mapped and relaxed conservation within `1e-8`; and
+- byte-identical continuous and checkpoint/restart results.
+
 Implementation status: ready for Unity validation on branch
-`mui-dsmc-ns-gate2`. Five real continuum snapshots are replayed forward and
-backward to exercise both hysteresis transitions. A real v2312 `dsmcCloud`
-audits retained `(origProc, origId)` identities, creation only in newly
-activated cells, removal from deactivated cells, and sampling-normalized
-activation mismatch. See [`docs/GATE2.md`](GATE2.md).
+`mui-dsmc-ns-gate3a`. See [`docs/GATE3A.md`](GATE3A.md).
 
-## Gate 3 - two-way conservative coupling
+## Gate 3B - coupled cylinder and scaling
 
-- block-averaged DSMC mass, momentum, and energy fluxes;
-- conservative RBF transfer to the continuum mesh;
-- relaxation applied only to statistically resolved flux windows;
-- global conservation audit and restart consistency; and
-- cylinder validation and parallel scaling study.
+- embed the Gate 3A flux contract in the real adaptive solvers;
+- audit global conservation during interface motion;
+- validate the cylinder against full DSMC uncertainty; and
+- complete the parallel scaling study.
+
+Gate 3B is not submitted until Gate 3A passes.
