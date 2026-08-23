@@ -11,6 +11,10 @@
 
 set -euo pipefail
 
-ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+ROOT=${GATE1C_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}
+if [[ ! -r "$ROOT/scripts/run_gate1c.sh" ]]; then
+    printf 'ERROR: Gate 1C repository root is invalid: %s\n' "$ROOT" >&2
+    exit 2
+fi
 cd "$ROOT"
 bash "$ROOT/scripts/run_gate1c.sh"

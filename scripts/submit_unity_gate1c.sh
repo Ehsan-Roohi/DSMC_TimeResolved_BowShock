@@ -28,7 +28,11 @@ fi
 
 bash "$ROOT/scripts/prepare_mui.sh"
 
-JOB_ID=$(sbatch --parsable --chdir="$ROOT" "$ROOT/slurm/unity_gate1c.sbatch")
+JOB_ID=$(sbatch \
+    --parsable \
+    --chdir="$ROOT" \
+    --export=ALL,GATE1C_ROOT="$ROOT" \
+    "$ROOT/slurm/unity_gate1c.sbatch")
 printf 'GATE1C_JOB_ID=%s\n' "$JOB_ID"
 printf 'WATCH=squeue -j %s\n' "$JOB_ID"
 printf 'LOG=%s/reports/gate1c-%s.out\n' "$ROOT" "$JOB_ID"

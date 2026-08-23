@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,36 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class Gate1CStaticTest(unittest.TestCase):
+    def test_slurm_spool_uses_exported_repository_root(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            fake_root = work / "repository"
+            runner = fake_root / "scripts/run_gate1c.sh"
+            runner.parent.mkdir(parents=True)
+            runner.write_text(
+                "#!/usr/bin/env bash\nprintf 'SPOOL_ROOT=%s\\n' \"$PWD\"\n",
+                encoding="utf-8",
+            )
+            runner.chmod(0o755)
+            spool_copy = work / "slurm-spool-copy.sh"
+            spool_copy.write_text(
+                (ROOT / "slurm/unity_gate1c.sbatch").read_text(),
+                encoding="utf-8",
+            )
+            elsewhere = work / "compute-working-directory"
+            elsewhere.mkdir()
+            environment = os.environ.copy()
+            environment["GATE1C_ROOT"] = str(fake_root)
+            result = subprocess.run(
+                ["bash", str(spool_copy)],
+                cwd=elsewhere,
+                env=environment,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.stdout.strip(), f"SPOOL_ROOT={fake_root}")
+
     def test_case_generation_and_analysis_contract(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
@@ -195,6 +226,13 @@ class Gate1CStaticTest(unittest.TestCase):
         self.assertIn("GATE1C_PIPELINE_FAIL", runner)
         self.assertIn("--kill-after=30", runner)
         self.assertIn('foamDictionary "$CONTINUUM_CONTROL" -entry startFrom', runner)
+
+        batch = (ROOT / "slurm/unity_gate1c.sbatch").read_text()
+        submitter = (ROOT / "scripts/submit_unity_gate1c.sh").read_text()
+        self.assertIn("GATE1C_ROOT", batch)
+        self.assertIn("SLURM_SUBMIT_DIR", batch)
+        self.assertNotIn('dirname "${BASH_SOURCE[0]}"', batch)
+        self.assertIn('--export=ALL,GATE1C_ROOT="$ROOT"', submitter)
 
 
 if __name__ == "__main__":
