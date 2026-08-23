@@ -25,7 +25,8 @@ source "$ROOT/scripts/load_openfoam_if_needed.sh"
 STAGE=static_tests
 (
     cd "$ROOT"
-    python3 -m unittest -q tests.test_gate2
+    python3 -m unittest -q \
+        tests.test_gate2 tests.test_gate2_time_precision
 )
 
 STAGE=build
@@ -94,6 +95,15 @@ if (( ${#SNAPSHOTS[@]} != 5 )); then
         "${#SNAPSHOTS[@]}" >&2
     exit 2
 fi
+for snapshot in "${SNAPSHOTS[@]}"; do
+    for field in p T U; do
+        if [[ ! -r "$RUN_DIR/continuum/$snapshot/$field" ]]; then
+            printf 'ERROR: exact snapshot field is missing: %s/%s\n' \
+                "$snapshot" "$field" >&2
+            exit 2
+        fi
+    done
+done
 
 REPLAY=("${SNAPSHOTS[@]}")
 for ((index=${#SNAPSHOTS[@]}-2; index>=0; --index)); do
@@ -105,6 +115,7 @@ if (( ${#REPLAY[@]} != 9 )); then
 fi
 
 CONTROL="$RUN_DIR/continuum/system/controlDict"
+TIME_SETTER="$ROOT/scripts/set_openfoam_start_time.py"
 foamDictionary "$CONTROL" -entry startFrom -set startTime
 INDICATOR_CSV="$REPORT_DIR/gate2_indicator.csv"
 INDICATOR_LOG="$REPORT_DIR/gate2_indicator.log"
@@ -112,7 +123,7 @@ INDICATOR_LOG="$REPORT_DIR/gate2_indicator.log"
 STAGE=indicator
 for frame in "${!REPLAY[@]}"; do
     snapshot=${REPLAY[frame]}
-    foamDictionary "$CONTROL" -entry startTime -set "$snapshot"
+    python3 "$TIME_SETTER" "$CONTROL" "$snapshot"
     GATE2_FRAME="$frame" GATE2_INDICATOR_OUTPUT="$INDICATOR_CSV" \
         "$BUILD_DIR/openfoam/gate2ContinuumIndicator" \
         -case "$RUN_DIR/continuum" \
