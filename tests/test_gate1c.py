@@ -26,6 +26,11 @@ class Gate1CStaticTest(unittest.TestCase):
             self.assertIn("(80 40 1)", (cases / "continuum/system/blockMeshDict").read_text())
             self.assertIn("(40 6 1)", (cases / "hybrid/system/blockMeshDict").read_text())
             self.assertIn("(40 20 1)", (cases / "reference/system/blockMeshDict").read_text())
+            continuum_schemes = (cases / "continuum/system/fvSchemes").read_text()
+            self.assertIn("div(tauMC) Gauss linear", continuum_schemes)
+            self.assertIn("reconstruct(rho) vanLeer", continuum_schemes)
+            self.assertIn("reconstruct(U) vanLeerV", continuum_schemes)
+            self.assertIn("reconstruct(T) vanLeer", continuum_schemes)
             self.assertIn(
                 "InflowBoundaryModel none",
                 (cases / "hybrid/constant/dsmcProperties").read_text(),
