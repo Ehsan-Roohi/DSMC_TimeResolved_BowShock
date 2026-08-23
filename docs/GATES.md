@@ -67,9 +67,10 @@ sampling standard deviations against an allowed value of 1.0. The record is
 ## Gate 3A - conservative flux contract
 
 - MUI MPMD transport of block-integrated mass, momentum, and energy fluxes;
-- conservative RBF transfer to a different continuum face layout;
+- conservative RBF transfer to a different continuum face layout with a
+  bounded raw defect and area-weighted global projection;
 - relaxation only for statistically resolved flux windows;
-- global mapped and relaxed conservation within `1e-8`; and
+- global projected and relaxed conservation within `1e-8`; and
 - byte-identical continuous and checkpoint/restart results.
 
 Implementation status: ready for Unity validation on branch

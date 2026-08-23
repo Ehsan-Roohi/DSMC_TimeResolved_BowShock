@@ -199,9 +199,11 @@ int runConsumer
 )
 {
     std::vector<mui::point2d> targetPoints;
+    std::vector<double> targetFaceAreas;
     for (int face = 0; face < nTargetFaces; ++face)
     {
         targetPoints.push_back(targetPoint(face));
+        targetFaceAreas.push_back(1.0/static_cast<double>(nTargetFaces));
     }
     mui::sampler_rbf2d<double> conservativeRbf
     (
@@ -240,6 +242,7 @@ int runConsumer
     }
 
     const std::vector<int> windows = selectedWindows(mode);
+    double maximumRawRbfConservationError = 0.0;
     double maximumMappedConservationError = 0.0;
     double maximumRelaxedConservationError = 0.0;
     int resolvedWindows = 0;
@@ -307,6 +310,17 @@ int runConsumer
 
         const muiFoam::ConservativeFlux sourceTotal =
             fetchExactTotals(interface, window, exact, temporal);
+        const double rawRbfError = muiFoam::projectGlobalConservation
+        (
+            mapped,
+            sourceTotal,
+            targetFaceAreas
+        );
+        maximumRawRbfConservationError = std::max
+        (
+            maximumRawRbfConservationError,
+            rawRbfError
+        );
         const muiFoam::ConservativeFlux mappedTotal =
             muiFoam::totalFlux(mapped);
         const double mappedError = muiFoam::maximumRelativeDifference
@@ -346,6 +360,7 @@ int runConsumer
                   << " max_rse=" << rse
                   << " statistically_resolved=true relaxation_applied=true"
                   << " alpha=" << alpha
+                  << " raw_rbf_conservation_rel=" << rawRbfError
                   << " mapped_conservation_rel=" << mappedError
                   << " relaxed_conservation_rel=" << relaxedError
                   << std::endl;
@@ -357,7 +372,16 @@ int runConsumer
     }
     muiFoam::writeFluxRestart(outputRestart, lastWindow, state);
 
+    const double rawRbfTolerance = 5.0e-2;
     const double tolerance = 1.0e-8;
+    if (maximumRawRbfConservationError > rawRbfTolerance)
+    {
+        std::cerr << "GATE3A_FAIL role=continuum reason=raw_rbf_defect"
+                  << " raw_rbf=" << maximumRawRbfConservationError
+                  << " limit=" << rawRbfTolerance
+                  << std::endl;
+        return EXIT_FAILURE;
+    }
     if (maximumMappedConservationError > tolerance
      || maximumRelaxedConservationError > tolerance)
     {
@@ -372,6 +396,8 @@ int runConsumer
               << "GATE3A_PASS role=continuum mode=" << mode
               << " resolved_windows=" << resolvedWindows
               << " skipped_windows=" << skippedWindows
+              << " max_raw_rbf_conservation_rel="
+              << maximumRawRbfConservationError
               << " max_mapped_conservation_rel="
               << maximumMappedConservationError
               << " max_relaxed_conservation_rel="

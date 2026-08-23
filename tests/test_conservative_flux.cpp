@@ -28,6 +28,44 @@ int main()
     const ConservativeFlux expectedTotal = {{4.0, 6.0, 8.0, 10.0, 12.0}};
     assert(muiFoam::maximumRelativeDifference(total, expectedTotal) < 1.0e-15);
 
+    std::vector<ConservativeFlux> mapped(3);
+    mapped[0] = {{0.8, 1.7, 2.6, 3.5, 4.4}};
+    mapped[1] = {{1.2, 2.0, 2.8, 3.6, 4.4}};
+    mapped[2] = {{1.7, 2.0, 2.7, 3.4, 4.1}};
+    const std::vector<double> targetAreas = {1.0, 2.0, 1.0};
+    const double rawProjectionError = muiFoam::projectGlobalConservation
+    (
+        mapped,
+        expectedTotal,
+        targetAreas
+    );
+    assert(rawProjectionError > 0.0);
+    assert
+    (
+        muiFoam::maximumRelativeDifference
+        (
+            muiFoam::totalFlux(mapped),
+            expectedTotal
+        ) < 1.0e-15
+    );
+
+    bool rejectedBadAreas = false;
+    try
+    {
+        std::vector<double> badAreas = {1.0, 0.0, 1.0};
+        (void)muiFoam::projectGlobalConservation
+        (
+            mapped,
+            expectedTotal,
+            badAreas
+        );
+    }
+    catch (const std::runtime_error&)
+    {
+        rejectedBadAreas = true;
+    }
+    assert(rejectedBadAreas);
+
     const char* restartPath = "gate3a_flux_restart_test.dat";
     muiFoam::writeFluxRestart(restartPath, 7, faces);
     const muiFoam::FluxRestart restored =

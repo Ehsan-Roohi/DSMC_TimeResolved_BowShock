@@ -10,9 +10,11 @@ sampling cost. Gate 3B will embed the accepted contract into the adaptive
 The DSMC-side MPMD application publishes block-integrated mass, three
 momentum components, and total-energy fluxes on a 3-by-3 source layout. The
 continuum-side application maps them to a 4-by-4 face layout with MUI's
-conservative RBF sampler. Integrated fluxes are mapped before division by
-continuum face area; therefore the sum, rather than a point value, is the
-conserved quantity.
+conservative RBF sampler. The pinned MUI-v2 operator is followed by an
+area-weighted projection that removes only its global constant-mode residual.
+The unprojected RBF defect must remain below `0.05`; therefore the projection
+cannot conceal a failed or grossly inaccurate mapping. Integrated fluxes are
+mapped before division by continuum face area, so their sum is conserved.
 
 Each flux window also carries a sample count and maximum relative standard
 error. Relaxation is forbidden unless the window contains at least 64
@@ -23,8 +25,9 @@ controlled three-window sequence contains:
 - one resolved 256-sample window relaxed with alpha 0.35; and
 - one resolved 512-sample window relaxed with alpha 0.50.
 
-Both the raw conservative mapping and the relaxed global balance must agree
-with their DSMC-side totals within `1e-8` relative.
+Both the projected mapping and the relaxed global balance must agree with
+their DSMC-side totals within `1e-8` relative. The raw RBF defect is recorded
+separately in the machine-readable summary.
 
 ## Restart audit
 

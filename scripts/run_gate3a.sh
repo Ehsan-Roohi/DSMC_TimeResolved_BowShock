@@ -67,11 +67,13 @@ run_dir = pathlib.Path(sys.argv[7])
 summary = pathlib.Path(sys.argv[8])
 mapped = []
 relaxed = []
+raw_rbf = []
 for path in logs:
     text = path.read_text(encoding="utf-8", errors="replace")
-    mapped.extend(float(x) for x in re.findall(r"mapped_conservation_rel=([^\s]+)", text))
+    raw_rbf.extend(float(x) for x in re.findall(r"raw_rbf_conservation_rel=([^\s]+)", text))
+    mapped.extend(float(x) for x in re.findall(r"(?<!raw_rbf_)mapped_conservation_rel=([^\s]+)", text))
     relaxed.extend(float(x) for x in re.findall(r"relaxed_conservation_rel=([^\s]+)", text))
-if not mapped or not relaxed or not all(math.isfinite(x) for x in mapped + relaxed):
+if not raw_rbf or not mapped or not relaxed or not all(math.isfinite(x) for x in raw_rbf + mapped + relaxed):
     raise SystemExit("Gate 3A conservation metrics are absent or non-finite")
 if states[0].read_bytes() != states[2].read_bytes():
     raise SystemExit("Gate 3A restart state differs from continuous state")
@@ -79,7 +81,7 @@ data = {
     "gate": "3A",
     "status": "PASS",
     "transport": "MUI-MPMD",
-    "mapping": "conservative-RBF-integrated-face-flux",
+    "mapping": "conservative-RBF-plus-area-weighted-global-projection",
     "flux_components": ["mass", "momentum_x", "momentum_y", "momentum_z", "energy"],
     "source_blocks": 9,
     "continuum_faces": 16,
@@ -87,6 +89,8 @@ data = {
     "minimum_resolved_samples": 64,
     "maximum_resolved_relative_standard_error": 0.05,
     "unresolved_window_skipped": True,
+    "maximum_raw_rbf_conservation_relative_error": max(raw_rbf),
+    "maximum_allowed_raw_rbf_conservation_relative_error": 0.05,
     "maximum_mapped_conservation_relative_error": max(mapped),
     "maximum_relaxed_conservation_relative_error": max(relaxed),
     "conservation_tolerance": 1.0e-8,

@@ -22,10 +22,11 @@ activation mismatch to `0.4874` DSMC sampling standard deviations.
 Gate 3 is split to avoid debugging the conservation operator inside an
 expensive cylinder run. Gate 3A transfers block-integrated DSMC mass,
 momentum, and energy fluxes through MUI's conservative RBF sampler, rejects
-statistically unresolved windows, audits raw and relaxed global conservation,
-and requires a checkpoint/restart execution to reproduce the continuous
-result byte for byte. Gate 3B will embed this accepted contract in the real
-adaptive cylinder solvers and perform physical validation and scaling.
+statistically unresolved windows, bounds the raw RBF defect, applies an
+area-weighted global conservation projection, and audits projected and relaxed
+balances. It also requires checkpoint/restart execution to reproduce the
+continuous result byte for byte. Gate 3B will embed this accepted contract in
+the real adaptive cylinder solvers and perform physical validation and scaling.
 
 ## Unity one-line submission
 

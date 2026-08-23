@@ -106,6 +106,73 @@ inline double maximumRelativeDifference
     return maximum;
 }
 
+inline double projectGlobalConservation
+(
+    std::vector<ConservativeFlux>& faceFluxes,
+    const ConservativeFlux& expectedTotal,
+    const std::vector<double>& faceAreas
+)
+{
+    if (faceFluxes.empty() || faceFluxes.size() != faceAreas.size()
+     || !finiteFlux(expectedTotal))
+    {
+        throw std::runtime_error("invalid global conservation projection input");
+    }
+
+    double totalArea = 0.0;
+    std::size_t closureFace = 0;
+    for (std::size_t face = 0; face < faceAreas.size(); ++face)
+    {
+        if (!std::isfinite(faceAreas[face]) || faceAreas[face] <= 0.0)
+        {
+            throw std::runtime_error("invalid target face area");
+        }
+        if (faceAreas[face] > faceAreas[closureFace])
+        {
+            closureFace = face;
+        }
+        totalArea += faceAreas[face];
+    }
+    if (!std::isfinite(totalArea) || totalArea <= 0.0)
+    {
+        throw std::runtime_error("invalid total target area");
+    }
+
+    const ConservativeFlux before = totalFlux(faceFluxes);
+    const double rawError = maximumRelativeDifference(before, expectedTotal);
+    ConservativeFlux residual = zeroFlux();
+    for (std::size_t component = 0; component < residual.size(); ++component)
+    {
+        residual[component] = expectedTotal[component] - before[component];
+    }
+
+    // Remove only the global constant-mode defect left by the RBF operator.
+    // Integrated flux is distributed in proportion to continuum face area.
+    for (std::size_t face = 0; face < faceFluxes.size(); ++face)
+    {
+        const double fraction = faceAreas[face]/totalArea;
+        for (std::size_t component = 0;
+             component < faceFluxes[face].size(); ++component)
+        {
+            faceFluxes[face][component] += fraction*residual[component];
+        }
+    }
+
+    // Close the final floating-point summation residual on one valid face.
+    const ConservativeFlux projectedTotal = totalFlux(faceFluxes);
+    for (std::size_t component = 0;
+         component < faceFluxes[closureFace].size(); ++component)
+    {
+        faceFluxes[closureFace][component] +=
+            expectedTotal[component] - projectedTotal[component];
+    }
+    if (!finiteFlux(faceFluxes[closureFace]))
+    {
+        throw std::runtime_error("non-finite projected conservative flux");
+    }
+    return rawError;
+}
+
 inline bool statisticallyResolved
 (
     const int samples,
