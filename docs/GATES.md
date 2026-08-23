@@ -47,10 +47,11 @@ maximum cross-state error `8.96e-7`.  The machine-readable record is
 - agreement inside the full DSMC 95% sampling interval or 3% normalized L2
   error, whichever is larger.
 
-Implementation status: ready for Unity validation on branch
-`mui-dsmc-ns-gate1c`. The fixed `y=0.015 m` interface and continuum-to-DSMC
-reservoir mapping run before the independent full-DSMC reference. A PASS is
-not recorded until both heat-flux and shear criteria pass on Unity.
+Unity status: passed in resume job `63489859` after the continuum and hybrid
+phases from job `63489379`. Heat-flux normalized L2 error was `0.3115` against
+a `0.3882` reference sampling threshold; shear error was `0.2598` against a
+`0.3602` threshold. The machine-readable record is
+[`docs/results/gate1c_unity_63489859.json`](results/gate1c_unity_63489859.json).
 
 ## Gate 2 - automatic interface
 
@@ -61,6 +62,13 @@ not recorded until both heat-flux and shear criteria pass on Unity.
 - overlap mismatch normalized by DSMC sampling uncertainty; and
 - no dependence on a full-DSMC or experimental solution to position the
   interface.
+
+Implementation status: ready for Unity validation on branch
+`mui-dsmc-ns-gate2`. Five real continuum snapshots are replayed forward and
+backward to exercise both hysteresis transitions. A real v2312 `dsmcCloud`
+audits retained `(origProc, origId)` identities, creation only in newly
+activated cells, removal from deactivated cells, and sampling-normalized
+activation mismatch. See [`docs/GATE2.md`](GATE2.md).
 
 ## Gate 3 - two-way conservative coupling
 

@@ -62,3 +62,14 @@ contracts. The upstream DSMC flat-plate/wedge tutorial is available in the
 [OpenFOAM source mirror](https://github.com/sajjadimhd/OpenFOAMv2312/tree/main/tutorials/discreteMethods/dsmcFoam/wedge15Ma5),
 and the motivating method is documented at
 [DOI 10.1002/fld.3769](https://onlinelibrary.wiley.com/doi/abs/10.1002/fld.3769).
+
+## Unity result
+
+Gate 1C passed in resume job `63489859`, reusing the completed continuum and
+hybrid phases from job `63489379`. Heat-flux normalized L2 error was `0.3115`
+against a full-DSMC 95% sampling threshold of `0.3882`; shear error was
+`0.2598` against `0.3602`. These uncertainty-dominated thresholds mean the
+observed profile differences were not statistically resolved beyond the
+reference scatter; they do not assert three-percent deterministic agreement.
+The immutable record is
+[`results/gate1c_unity_63489859.json`](results/gate1c_unity_63489859.json).

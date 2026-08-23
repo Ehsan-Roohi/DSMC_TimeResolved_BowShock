@@ -1,0 +1,3 @@
+gate2ContinuumIndicator.C
+
+EXE = $(GATE2_BUILD_DIR)/openfoam/gate2ContinuumIndicator
