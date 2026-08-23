@@ -35,6 +35,11 @@ moment error.
 
 This is a numerical integration gate, not a physical validation case.
 
+Unity status: passed in job `63484646` with 10 coupled steps, continuum
+conservation error `6.31e-34`, DSMC conservation error `5.71e-16`, and
+maximum cross-state error `8.96e-7`.  The machine-readable record is
+[`docs/results/gate1b_unity_63484646.json`](results/gate1b_unity_63484646.json).
+
 ## Gate 1C - flat-plate physical validation
 
 - fixed interface independent of the full-DSMC result;

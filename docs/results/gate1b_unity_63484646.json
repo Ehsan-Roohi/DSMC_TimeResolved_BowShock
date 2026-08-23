@@ -1,0 +1,22 @@
+{
+  "gate": "1B",
+  "status": "PASS",
+  "unity_job_id": 63484646,
+  "slurm_state": "COMPLETED",
+  "elapsed": "00:01:41",
+  "exit_code": "0:0",
+  "openfoam_version": "v2312",
+  "openmpi_version": "4.1.6",
+  "mui_commit": "b130c7a12aa8e7ac8d54e9188c4836342daed263",
+  "case": "uniform-periodic-argon",
+  "coupling": "live-two-way-state-audit",
+  "continuum_solver": "rhoCentralFoamMUI",
+  "kinetic_solver": "dsmcFoamMUI",
+  "coupled_steps": 10,
+  "dsmc_parcels": 384,
+  "handoff_cross_rel": 8.95830056422e-07,
+  "continuum_max_conservation_rel": 6.3147588776e-34,
+  "dsmc_max_conservation_rel": 5.70822544587e-16,
+  "continuum_max_cross_state_rel": 8.95830056422e-07,
+  "dsmc_max_cross_state_rel": 8.95830056422e-07
+}

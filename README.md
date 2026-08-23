@@ -7,7 +7,7 @@ Methods in Fluids*, 2013, DOI: `10.1002/fld.3769`).
 Development is gated. A later physical or production case is never submitted
 until the smaller API, transport, conservation, and equilibrium checks pass.
 
-## Current branch: Gate 1B
+## Verified through Gate 1B
 
 Gate 0 passed on Unity with OpenFOAM-v2312, OpenMPI 4.1.6, and pinned MUI-v2.
 Gate 1A then compiled the continuum and DSMC adapter APIs and passed the fixed
@@ -24,6 +24,10 @@ interface moment audit. Gate 1B now runs real derived OpenFOAM executables:
 This gate tests real solver integration in uniform equilibrium. It does not
 claim flat-plate, shock, wall-heat-flux or shear validation.
 
+Unity job `63484646` passed all Gate 1B criteria: both solvers completed ten
+coupled steps, the maximum conservation errors were `6.31e-34` (continuum)
+and `5.71e-16` (DSMC), and the maximum cross-state mismatch was `8.96e-7`.
+
 ## Unity one-line submission
 
 ```bash
@@ -37,8 +41,8 @@ the Slurm job ID and exact log path.
 
 - Gate 0: environment, MPI ABI, and MUI MPMD transport — passed on Unity.
 - Gate 1A: v2312 adapter API plus fixed-interface equilibrium audit — passed.
-- Gate 1B: short uniform-equilibrium run with the actual two solvers — current.
-- Gate 1C: flat-plate comparison against full DSMC uncertainty.
+- Gate 1B: short uniform-equilibrium run with the actual two solvers — passed.
+- Gate 1C: flat-plate comparison against full DSMC uncertainty — next.
 - Gate 2: automatic interface with hysteresis and particle reuse.
 - Gate 3: conservative two-way coupling.
 
