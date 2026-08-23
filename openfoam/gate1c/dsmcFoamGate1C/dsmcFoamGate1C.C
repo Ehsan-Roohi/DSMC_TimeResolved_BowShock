@@ -272,7 +272,7 @@ bool writeWallSample
         const double tau = forceDensity[facei].x();
         if (!std::isfinite(q) || !std::isfinite(tau))
         {
-            Foam::Info<< "GATE1C_FAIL role=" << role
+            Foam::Info<< "GATE1C_FAIL role=" << role.c_str()
                       << " reason=nonfinite_wall_observable"
                       << " step=" << couplingStep
                       << " face=" << facei << Foam::endl;
@@ -280,7 +280,7 @@ bool writeWallSample
         }
 
         Foam::Info<< "GATE1C_WALL"
-                  << " role=" << role
+                  << " role=" << role.c_str()
                   << " step=" << couplingStep
                   << " face=" << facei
                   << " x=" << plate.faceCentres()[facei].x()
@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
     const Foam::label platePatch = mesh.boundaryMesh().findPatchID("plate");
     if (platePatch < 0 || dsmc.typeIdList().size() != 1 || dsmc.size() == 0)
     {
-        Foam::Info<< "GATE1C_FAIL role=" << role
+        Foam::Info<< "GATE1C_FAIL role=" << role.c_str()
                   << " reason=invalid_case_or_cloud" << Foam::endl;
         return 2;
     }
@@ -371,7 +371,7 @@ int main(int argc, char *argv[])
 
         if (couplingStep % 100 == 0)
         {
-            Foam::Info<< "GATE1C_PROGRESS role=" << role
+            Foam::Info<< "GATE1C_PROGRESS role=" << role.c_str()
                       << " step=" << couplingStep
                       << " parcels=" << dsmc.size()
                       << " inserted=" << totalInserted << Foam::endl;
@@ -381,7 +381,7 @@ int main(int argc, char *argv[])
 
     const bool pass = couplingStep == gate1c::kineticSteps;
     Foam::Info<< (pass ? "GATE1C_PASS" : "GATE1C_FAIL")
-              << " role=" << role
+              << " role=" << role.c_str()
               << " steps=" << couplingStep
               << " final_parcels=" << dsmc.size()
               << " inserted=" << totalInserted << Foam::endl;

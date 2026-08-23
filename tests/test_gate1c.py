@@ -105,11 +105,11 @@ class Gate1CStaticTest(unittest.TestCase):
                             f"x={x} q={q} tau={tau}\n"
                         )
                         hybrid_stream.write(
-                            f"GATE1C_WALL role=hybrid step={step} face={face} "
+                            f'GATE1C_WALL role="hybrid" step={step} face={face} '
                             f"x={x} q={1.01*q} tau={1.01*tau}\n"
                         )
                 ref_stream.write("GATE1C_PASS role=reference steps=1600\n")
-                hybrid_stream.write("GATE1C_PASS role=hybrid steps=1600\n")
+                hybrid_stream.write('GATE1C_PASS role="hybrid" steps=1600\n')
 
             summary = work / "summary.json"
             comparison = work / "comparison.csv"
@@ -178,7 +178,7 @@ class Gate1CStaticTest(unittest.TestCase):
             later_sample = next(
                 index
                 for index, line in enumerate(shifted_lines)
-                if line.startswith("GATE1C_WALL role=hybrid step=605 face=0 ")
+                if line.startswith('GATE1C_WALL role="hybrid" step=605 face=0 ')
             )
             shifted_lines[later_sample] = shifted_lines[later_sample].replace(
                 "x=0.00125 ", "x=0.00126 "
@@ -225,7 +225,10 @@ class Gate1CStaticTest(unittest.TestCase):
         self.assertIn("dictionary_count != 44", runner)
         self.assertIn("GATE1C_PIPELINE_FAIL", runner)
         self.assertIn("--kill-after=30", runner)
+        self.assertIn("GATE1C_RESUME_FROM_JOB", runner)
+        self.assertIn('role="?hybrid"?', runner)
         self.assertIn('foamDictionary "$CONTINUUM_CONTROL" -entry startFrom', runner)
+        self.assertNotIn('<< " role=" << role\n', solver)
 
         batch = (ROOT / "slurm/unity_gate1c.sbatch").read_text()
         submitter = (ROOT / "scripts/submit_unity_gate1c.sh").read_text()

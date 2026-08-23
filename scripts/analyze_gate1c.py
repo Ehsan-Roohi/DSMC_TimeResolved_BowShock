@@ -13,7 +13,7 @@ from pathlib import Path
 
 
 WALL_RE = re.compile(
-    r"GATE1C_WALL role=(?P<role>\w+) step=(?P<step>\d+) "
+    r'GATE1C_WALL role="?(?P<role>\w+)"? step=(?P<step>\d+) '
     r"face=(?P<face>\d+) x=(?P<x>[-+0-9.eE]+) "
     r"q=(?P<q>[-+0-9.eE]+) tau=(?P<tau>[-+0-9.eE]+)"
 )
@@ -26,7 +26,10 @@ EXPECTED_STEPS = list(range(600, 1601, 5))
 def parse(path: Path, expected_role: str) -> dict[int, list[tuple[int, float, float, float]]]:
     observations: dict[int, list[tuple[int, float, float, float]]] = {}
     text = path.read_text(encoding="utf-8", errors="replace")
-    if f"GATE1C_PASS role={expected_role}" not in text:
+    pass_pattern = re.compile(
+        rf'GATE1C_PASS role="?{re.escape(expected_role)}"?\b'
+    )
+    if not pass_pattern.search(text):
         raise ValueError(f"missing PASS marker for {expected_role} in {path}")
     for match in WALL_RE.finditer(text):
         if match.group("role") != expected_role:

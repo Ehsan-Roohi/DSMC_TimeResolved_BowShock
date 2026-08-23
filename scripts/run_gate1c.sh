@@ -5,7 +5,12 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 REPORT_DIR=${REPORT_DIR:-"$ROOT/reports"}
 BUILD_DIR=${BUILD_DIR:-"$ROOT/build/gate1c"}
 RUN_ID=${SLURM_JOB_ID:-manual-$(date -u +%Y%m%dT%H%M%SZ)}
-RUN_DIR=${RUN_DIR:-"$ROOT/run/gate1c-$RUN_ID"}
+RESUME_FROM_JOB=${GATE1C_RESUME_FROM_JOB:-}
+if [[ -n "$RESUME_FROM_JOB" ]]; then
+    RUN_DIR=${RUN_DIR:-"$ROOT/run/gate1c-$RESUME_FROM_JOB"}
+else
+    RUN_DIR=${RUN_DIR:-"$ROOT/run/gate1c-$RUN_ID"}
+fi
 mkdir -p "$REPORT_DIR"
 STAGE=startup
 trap '
@@ -26,6 +31,42 @@ STAGE=static_tests
     cd "$ROOT"
     python3 -m unittest -q tests.test_gate1c
 )
+
+CONTINUUM_LOG="$REPORT_DIR/gate1c_continuum.log"
+HYBRID_LOG="$REPORT_DIR/gate1c_hybrid.log"
+if [[ -n "$RESUME_FROM_JOB" ]]; then
+    STAGE=resume_validation
+    if [[ ! "$RESUME_FROM_JOB" =~ ^[0-9]+$ ]]; then
+        printf 'ERROR: GATE1C_RESUME_FROM_JOB must be a numeric Slurm job ID.\n' >&2
+        exit 2
+    fi
+    for executable in muiContinuumPublisher dsmcFoamGate1C; do
+        if [[ ! -x "$BUILD_DIR/openfoam/$executable" ]]; then
+            printf 'ERROR: resume executable is missing: %s\n' "$executable" >&2
+            exit 2
+        fi
+    done
+    for required_path in \
+        "$RUN_DIR/continuum/system/controlDict" \
+        "$RUN_DIR/hybrid/0.0004/uniform/time" \
+        "$RUN_DIR/reference/0/dsmcSigmaTcRMax" \
+        "$RUN_DIR/reference/0/lagrangian/dsmc" \
+        "$HYBRID_LOG"; do
+        if [[ ! -e "$required_path" ]]; then
+            printf 'ERROR: resume artifact is missing: %s\n' "$required_path" >&2
+            exit 2
+        fi
+    done
+    if ! grep -Fq "$RUN_DIR/hybrid" "$HYBRID_LOG" \
+        || ! grep -Eq 'GATE1C_PASS role="?publisher"?' "$HYBRID_LOG" \
+        || ! grep -Eq 'GATE1C_PASS role="?hybrid"?' "$HYBRID_LOG"; then
+        printf 'ERROR: prior hybrid log does not prove a completed run for job %s.\n' \
+            "$RESUME_FROM_JOB" >&2
+        exit 2
+    fi
+    printf 'GATE1C_RESUME_FROM_JOB=%s\n' "$RESUME_FROM_JOB"
+    printf 'GATE1C_RESUME_REUSED=continuum,hybrid\n'
+else
 STAGE=build
 BUILD_DIR="$BUILD_DIR" bash "$ROOT/scripts/build_gate1c.sh"
 STAGE=case_generation
@@ -71,7 +112,6 @@ for case_name in hybrid reference; do
     fi
 done
 
-CONTINUUM_LOG="$REPORT_DIR/gate1c_continuum.log"
 printf 'GATE1C_CONTINUUM_RUN_ORDER=1\n'
 STAGE=continuum
 timeout --signal=TERM --kill-after=30 900 \
@@ -98,7 +138,6 @@ if [[ -z "$MPI_LAUNCHER" || ! -x "$MPI_LAUNCHER" ]]; then
     exit 127
 fi
 
-HYBRID_LOG="$REPORT_DIR/gate1c_hybrid.log"
 printf 'GATE1C_HYBRID_RUN_ORDER=2\n'
 STAGE=hybrid
 timeout --signal=TERM --kill-after=30 900 \
@@ -111,8 +150,9 @@ timeout --signal=TERM --kill-after=30 900 \
         -case "$RUN_DIR/hybrid" \
     2>&1 | tee "$HYBRID_LOG"
 
-grep -q 'GATE1C_PASS role=publisher' "$HYBRID_LOG"
-grep -q 'GATE1C_PASS role=hybrid' "$HYBRID_LOG"
+grep -Eq 'GATE1C_PASS role="?publisher"?' "$HYBRID_LOG"
+grep -Eq 'GATE1C_PASS role="?hybrid"?' "$HYBRID_LOG"
+fi
 
 # Deliberately run the full DSMC reference only after the interface has been
 # fixed and the hybrid result has completed.  Reference data cannot influence
@@ -124,7 +164,7 @@ GATE1C_ROLE=reference timeout --signal=TERM --kill-after=30 900 \
     "$BUILD_DIR/openfoam/dsmcFoamGate1C" \
     -case "$RUN_DIR/reference" \
     2>&1 | tee "$REFERENCE_LOG"
-grep -q 'GATE1C_PASS role=reference' "$REFERENCE_LOG"
+grep -Eq 'GATE1C_PASS role="?reference"?' "$REFERENCE_LOG"
 
 SUMMARY="$REPORT_DIR/gate1c_summary.json"
 COMPARISON="$REPORT_DIR/gate1c_wall_comparison.csv"
