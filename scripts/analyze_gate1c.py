@@ -19,6 +19,8 @@ WALL_RE = re.compile(
 )
 T95_DF3 = 3.182446305
 BATCHES = 4
+EXPECTED_FACES = 40
+EXPECTED_STEPS = list(range(600, 1601, 5))
 
 
 def parse(path: Path, expected_role: str) -> dict[int, list[tuple[int, float, float, float]]]:
@@ -76,6 +78,12 @@ def main() -> int:
     hybrid = parse(args.hybrid, "hybrid")
     if set(reference) != set(hybrid):
         raise ValueError("reference and hybrid wall-face sets differ")
+    expected_faces = set(range(EXPECTED_FACES))
+    if set(reference) != expected_faces:
+        raise ValueError(
+            f"wall-face set is incomplete: expected {sorted(expected_faces)}, "
+            f"got {sorted(reference)}"
+        )
 
     rows: list[dict[str, float | int]] = []
     reference_q: list[float] = []
@@ -93,8 +101,17 @@ def main() -> int:
         hybrid_steps = [sample[0] for sample in hybrid_samples]
         if ref_steps != hybrid_steps:
             raise ValueError(f"sampling steps differ on face {face}")
-        if abs(ref_samples[0][1] - hybrid_samples[0][1]) > 1.0e-12:
-            raise ValueError(f"wall coordinate differs on face {face}")
+        if ref_steps != EXPECTED_STEPS:
+            raise ValueError(
+                f"sampling schedule is incomplete on face {face}: "
+                f"expected {len(EXPECTED_STEPS)} samples, got {len(ref_steps)}"
+            )
+        expected_x = (face + 0.5)*0.0025
+        if any(
+            abs(sample[1] - expected_x) > 1.0e-12
+            for sample in ref_samples + hybrid_samples
+        ):
+            raise ValueError(f"unexpected wall coordinate on face {face}")
 
         ref_q_mean, ref_q_ci, ref_used = batch_statistics(
             [sample[2] for sample in ref_samples]
@@ -162,6 +179,7 @@ def main() -> int:
         "interface_selected_before_reference": True,
         "full_dsmc_executed_after_hybrid": True,
         "wall_faces": len(rows),
+        "samples_per_face_observed": len(EXPECTED_STEPS),
         "samples_per_face_used": used_samples,
         "batch_count": BATCHES,
         "heat_flux_normalized_l2": q_error,

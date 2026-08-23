@@ -19,6 +19,7 @@ constexpr int sampleStride = 5;
 constexpr double plateLength = 0.1;
 constexpr double interfaceHeight = 0.015;
 constexpr double fullHeight = 0.05;
+constexpr double kineticSpan = 0.0025;
 constexpr double kineticDx = plateLength/streamwiseCells;
 constexpr double kineticDy = interfaceHeight/hybridNormalCells;
 constexpr double continuumDx = plateLength/80.0;

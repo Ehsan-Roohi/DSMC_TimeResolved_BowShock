@@ -23,6 +23,25 @@ class Gate1CStaticTest(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
+            generated_files = {
+                str(path.relative_to(cases))
+                for path in cases.rglob("*")
+                if path.is_file()
+            }
+            self.assertEqual(len(generated_files), 44)
+            for required in (
+                "continuum/0/T",
+                "continuum/0/U",
+                "continuum/0/p",
+                "continuum/constant/momentumTransport",
+                "hybrid/0/dsmcRhoN",
+                "hybrid/0/fD",
+                "hybrid/0/q",
+                "reference/0/dsmcRhoN",
+                "reference/0/fD",
+                "reference/0/q",
+            ):
+                self.assertIn(required, generated_files)
             self.assertIn("(80 40 1)", (cases / "continuum/system/blockMeshDict").read_text())
             self.assertIn("(40 6 1)", (cases / "hybrid/system/blockMeshDict").read_text())
             self.assertIn("(40 20 1)", (cases / "reference/system/blockMeshDict").read_text())
@@ -85,19 +104,97 @@ class Gate1CStaticTest(unittest.TestCase):
             result = json.loads(summary.read_text())
             self.assertEqual(result["status"], "PASS")
             self.assertEqual(result["wall_faces"], 40)
+            self.assertEqual(result["samples_per_face_observed"], 201)
             self.assertEqual(result["samples_per_face_used"], 200)
             self.assertTrue(result["interface_selected_before_reference"])
             self.assertTrue(comparison.is_file())
+
+            incomplete_hybrid = work / "hybrid_incomplete.log"
+            hybrid_lines = hybrid.read_text(encoding="utf-8").splitlines()
+            first_sample = next(
+                index
+                for index, line in enumerate(hybrid_lines)
+                if line.startswith("GATE1C_WALL")
+            )
+            del hybrid_lines[first_sample]
+            incomplete_hybrid.write_text(
+                "\n".join(hybrid_lines) + "\n", encoding="utf-8"
+            )
+            incomplete = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts/analyze_gate1c.py"),
+                    "--reference",
+                    str(reference),
+                    "--hybrid",
+                    str(incomplete_hybrid),
+                    "--summary",
+                    str(work / "incomplete_summary.json"),
+                    "--csv",
+                    str(work / "incomplete.csv"),
+                    "--run-dir",
+                    str(cases),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(incomplete.returncode, 0)
+            self.assertIn("sampling steps differ", incomplete.stderr)
+
+            shifted_hybrid = work / "hybrid_shifted.log"
+            shifted_lines = hybrid.read_text(encoding="utf-8").splitlines()
+            later_sample = next(
+                index
+                for index, line in enumerate(shifted_lines)
+                if line.startswith("GATE1C_WALL role=hybrid step=605 face=0 ")
+            )
+            shifted_lines[later_sample] = shifted_lines[later_sample].replace(
+                "x=0.00125 ", "x=0.00126 "
+            )
+            shifted_hybrid.write_text(
+                "\n".join(shifted_lines) + "\n", encoding="utf-8"
+            )
+            shifted = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts/analyze_gate1c.py"),
+                    "--reference",
+                    str(reference),
+                    "--hybrid",
+                    str(shifted_hybrid),
+                    "--summary",
+                    str(work / "shifted_summary.json"),
+                    "--csv",
+                    str(work / "shifted.csv"),
+                    "--run-dir",
+                    str(cases),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(shifted.returncode, 0)
+            self.assertIn("unexpected wall coordinate", shifted.stderr)
 
     def test_coupling_geometry_contract(self) -> None:
         header = (ROOT / "openfoam/gate1c/common/Gate1CMui.H").read_text()
         self.assertIn("streamwiseCells = 40", header)
         self.assertIn("hybridNormalCells = 6", header)
         self.assertIn("interfaceHeight = 0.015", header)
+        self.assertIn("kineticSpan = 0.0025", header)
         solver = (ROOT / "openfoam/gate1c/dsmcFoamGate1C/dsmcFoamGate1C.C").read_text()
         self.assertIn("injectMappedReservoir", solver)
         self.assertIn("GATE1C_WALL", solver)
         self.assertIn("gate1c::fetchState", solver)
+        self.assertIn("duplicate_mapped_point", solver)
+
+        runner = (ROOT / "scripts/run_gate1c.sh").read_text()
+        self.assertIn("GATE1C_DICTIONARIES_VALIDATED", runner)
+        self.assertIn("dictionary_count != 44", runner)
+        self.assertIn("GATE1C_PIPELINE_FAIL", runner)
+        self.assertIn("--kill-after=30", runner)
+        self.assertIn('foamDictionary "$CONTINUUM_CONTROL" -entry startFrom', runner)
 
 
 if __name__ == "__main__":

@@ -5,11 +5,12 @@
 #SBATCH --ntasks=2
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=12G
-#SBATCH --time=00:40:00
+#SBATCH --time=01:00:00
 #SBATCH --output=reports/gate1c-%j.out
 #SBATCH --error=reports/gate1c-%j.err
 
 set -euo pipefail
 
-ROOT=${SLURM_SUBMIT_DIR:?SLURM_SUBMIT_DIR is not set}
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$ROOT"
 bash "$ROOT/scripts/run_gate1c.sh"

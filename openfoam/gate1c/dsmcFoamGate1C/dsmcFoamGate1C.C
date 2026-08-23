@@ -46,6 +46,7 @@ Foam::label injectMappedReservoir
     const double equivalentParticles = cloud.nParticle();
     Foam::label inserted = 0;
     Foam::label mappedFaces = 0;
+    std::vector<bool> mappedPointSeen(gate1c::couplingPointCount, false);
 
     forAll(mesh.boundaryMesh(), patchi)
     {
@@ -75,6 +76,16 @@ Foam::label injectMappedReservoir
                           << " centre=" << faceCentre << Foam::endl;
                 return -1;
             }
+            if (mappedPointSeen[pointIndex])
+            {
+                Foam::Info<< "GATE1C_FAIL role=hybrid"
+                          << " reason=duplicate_mapped_point"
+                          << " point=" << pointIndex
+                          << " patch=" << patch.name()
+                          << " centre=" << faceCentre << Foam::endl;
+                return -1;
+            }
+            mappedPointSeen[pointIndex] = true;
 
             const gate1c::State state = gate1c::fetchState
             (
@@ -151,11 +162,24 @@ Foam::label injectMappedReservoir
 
             const Foam::label globalFace = patch.start() + facei;
             const Foam::label celli = mesh.faceOwner()[globalFace];
-            const Foam::point position =
-                faceCentre + 1.0e-7*gate1c::kineticDy*inwardNormal;
-
             for (Foam::label parceli = 0; parceli < parcelCount; ++parceli)
             {
+                Foam::point position(faceCentre);
+                const double openIntervalScale = 1.0 - 2.0e-12;
+                if (patch.name() == "interface")
+                {
+                    position.x() += openIntervalScale*gate1c::kineticDx*
+                        (cloud.rndGen().sample01<Foam::scalar>() - 0.5);
+                }
+                else
+                {
+                    position.y() += openIntervalScale*gate1c::kineticDy*
+                        (cloud.rndGen().sample01<Foam::scalar>() - 0.5);
+                }
+                position.z() = openIntervalScale*gate1c::kineticSpan*
+                    (cloud.rndGen().sample01<Foam::scalar>() - 0.5);
+                position += 1.0e-7*gate1c::kineticDy*inwardNormal;
+
                 double probability = -1.0;
                 double normalVelocity = 0.0;
                 int attempts = 0;
@@ -209,7 +233,12 @@ Foam::label injectMappedReservoir
         }
     }
 
-    if (mappedFaces != gate1c::couplingPointCount)
+    if
+    (
+        mappedFaces != gate1c::couplingPointCount
+     || std::find(mappedPointSeen.begin(), mappedPointSeen.end(), false)
+        != mappedPointSeen.end()
+    )
     {
         Foam::Info<< "GATE1C_FAIL role=hybrid"
                   << " reason=mapped_face_count"
