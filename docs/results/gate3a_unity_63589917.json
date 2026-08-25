@@ -1,0 +1,18 @@
+{
+  "gate": "3A",
+  "status": "PASS",
+  "unity_job_id": 63589917,
+  "elapsed": "00:00:38",
+  "exit_code": "0:0",
+  "transport": "MUI-MPMD",
+  "mapping": "conservative-RBF-plus-area-weighted-global-projection",
+  "windows": 3,
+  "maximum_raw_rbf_conservation_relative_error": 0.017023825659687235,
+  "maximum_allowed_raw_rbf_conservation_relative_error": 0.05,
+  "maximum_mapped_conservation_relative_error": 0.0,
+  "maximum_relaxed_conservation_relative_error": 2.4121354372818014e-16,
+  "conservation_tolerance": 1e-08,
+  "unresolved_window_skipped": true,
+  "restart_matches_continuous_byte_for_byte": true,
+  "mui_commit": "b130c7a12aa8e7ac8d54e9188c4836342daed263"
+}

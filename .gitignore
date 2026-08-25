@@ -6,4 +6,6 @@ reports/*.txt
 reports/*.json
 reports/*.capture
 openfoam/**/Make/linux*
+__pycache__/
+*.py[cod]
 !reports/.gitkeep

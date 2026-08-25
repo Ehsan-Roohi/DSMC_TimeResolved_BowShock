@@ -73,8 +73,10 @@ sampling standard deviations against an allowed value of 1.0. The record is
 - global projected and relaxed conservation within `1e-8`; and
 - byte-identical continuous and checkpoint/restart results.
 
-Implementation status: ready for Unity validation on branch
-`mui-dsmc-ns-gate3a`. See [`docs/GATE3A.md`](GATE3A.md).
+Unity status: passed in job `63589917`. The raw RBF defect was `0.0170238`,
+the projected error was zero, the relaxed error was `2.41214e-16`, and the
+restart matched the continuous state byte for byte. See
+[`docs/GATE3A.md`](GATE3A.md).
 
 ## Gate 3B - coupled cylinder and scaling
 
@@ -84,3 +86,9 @@ Implementation status: ready for Unity validation on branch
 - complete the parallel scaling study.
 
 Gate 3B is not submitted until Gate 3A passes.
+
+The first Gate 3B submission is a moving-cylinder integration pilot across
+three nonmatching interface resolutions. It closes moving-boundary and restart
+risk before the full OpenFOAM cylinder validation and parallel scaling run.
+The pilot is documented in [`docs/GATE3B.md`](GATE3B.md) and cannot itself be
+reported as completion of the final physical Gate 3B.

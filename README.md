@@ -7,7 +7,7 @@ Methods in Fluids*, 2013, DOI: `10.1002/fld.3769`).
 Development is gated. A later physical or production case is never submitted
 until the smaller API, transport, conservation, and equilibrium checks pass.
 
-## Current branch: Gate 3A
+## Current branch: Gate 3B moving-interface pilot
 
 Gate 0 passed on Unity with OpenFOAM-v2312, OpenMPI 4.1.6, and pinned MUI-v2.
 Gate 1A compiled the continuum and DSMC adapter APIs. Gate 1B ran the two real
@@ -19,22 +19,21 @@ interface completed nine forward/reverse frames, dynamically activated and
 deactivated 717 cells, preserved retained parcel identities, and limited the
 activation mismatch to `0.4874` DSMC sampling standard deviations.
 
-Gate 3 is split to avoid debugging the conservation operator inside an
-expensive cylinder run. Gate 3A transfers block-integrated DSMC mass,
-momentum, and energy fluxes through MUI's conservative RBF sampler, rejects
-statistically unresolved windows, bounds the raw RBF defect, applies an
-area-weighted global conservation projection, and audits projected and relaxed
-balances. It also requires checkpoint/restart execution to reproduce the
-continuous result byte for byte. Gate 3B will embed this accepted contract in
-the real adaptive cylinder solvers and perform physical validation and scaling.
+Gate 3A passed in Unity job `63589917`: its raw RBF defect was `0.0170238`,
+the projected error was zero, the relaxed error was `2.41214e-16`, and restart
+was byte-identical. The first Gate 3B submission is a bounded moving-cylinder
+integration pilot. It contracts and expands a semicylindrical interface,
+audits conservative transfer on three nonmatching resolutions, and repeats the
+medium case through checkpoint/restart. The pilot does not claim final physical
+cylinder validation or parallel scaling.
 
 ## Unity one-line submission
 
 ```bash
-ROOT=/project/pi_roohie_umass_edu/github_sync/OpenFOAM-MUI-DSMC-NS; BR=mui-dsmc-ns-gate3a; cd "$ROOT" && git fetch origin "$BR:refs/remotes/origin/$BR" && { git checkout "$BR" 2>/dev/null || git checkout -b "$BR" --track "origin/$BR"; } && git merge --ff-only "origin/$BR" && OPENFOAM_MODULE=openfoam/2312 bash scripts/submit_unity_gate3a.sh
+ROOT=/project/pi_roohie_umass_edu/github_sync/OpenFOAM-MUI-DSMC-NS; BR=mui-dsmc-ns-gate3b; cd "$ROOT" && git fetch origin "$BR:refs/remotes/origin/$BR" && { git checkout "$BR" 2>/dev/null || git checkout -b "$BR" --track "origin/$BR"; } && git merge --ff-only "origin/$BR" && OPENFOAM_MODULE=openfoam/2312 bash scripts/submit_unity_gate3b.sh
 ```
 
-The command requires the Gate 2 PASS artifact in the same checkout. It prints
+The command requires the Gate 3A PASS artifact in the same checkout. It prints
 the Slurm job ID and exact log path.
 
 ## Gate sequence
@@ -44,16 +43,19 @@ the Slurm job ID and exact log path.
 - Gate 1B: actual two-solver uniform-equilibrium integration — passed.
 - Gate 1C: fixed-interface flat-plate physical validation — passed.
 - Gate 2: automatic interface, hysteresis, and parcel reuse — passed.
-- Gate 3A: conservative flux transfer and restart gate — ready for Unity.
-- Gate 3B: adaptive two-way cylinder validation and scaling — gated by 3A.
+- Gate 3A: conservative flux transfer and restart gate — passed.
+- Gate 3B pilot: moving cylindrical interface and resolution/restart audit —
+  ready for Unity.
+- Final Gate 3B: real adaptive cylinder validation and parallel scaling —
+  gated by the moving-interface pilot.
 
 See [docs/GATES.md](docs/GATES.md) and
-[docs/GATE3A.md](docs/GATE3A.md).
+[docs/GATE3B.md](docs/GATE3B.md).
 
 ## Reproducibility
 
 - MUI is pinned to commit `b130c7a12aa8e7ac8d54e9188c4836342daed263`.
-- Gate 3A refuses to run without the Gate 2 PASS artifact.
+- Gate 3B refuses to run without the strict Gate 3A PASS artifact.
 - Each Slurm job writes to a unique, non-overwriting run directory.
 - Relaxation is forbidden for unresolved flux windows.
 - Continuous and restarted final states must be byte-identical.

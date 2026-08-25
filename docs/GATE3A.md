@@ -46,3 +46,12 @@ Gate 3A proves the MUI transport, conservative RBF operator, statistical
 relaxation guard, global flux audit, and restart determinism. It deliberately
 does not claim cylinder validation or parallel scaling; those are Gate 3B
 acceptance items after this smaller gate passes on Unity.
+
+## Unity result
+
+Gate 3A passed in Unity job `63589917` with exit code `0:0`. The maximum raw
+RBF defect was `0.0170238` against the predeclared `0.05` limit. The projected
+global error was exactly zero and the maximum relaxed error was `2.41214e-16`
+against a `1e-8` tolerance. The restarted result matched the continuous state
+byte for byte. The immutable record is
+[`results/gate3a_unity_63589917.json`](results/gate3a_unity_63589917.json).
