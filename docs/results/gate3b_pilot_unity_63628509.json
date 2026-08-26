@@ -1,0 +1,30 @@
+{
+  "gate": "3B-PILOT",
+  "status": "PASS",
+  "unity_job_id": 63628509,
+  "elapsed": "00:00:53",
+  "exit_code": "0:0",
+  "scope": "moving-cylinder-interface-conservation-and-resolution-pilot",
+  "transport": "MUI-MPMD",
+  "geometry": "moving-semicylindrical-interface",
+  "resolutions": [
+    "coarse",
+    "medium",
+    "fine"
+  ],
+  "source_faces": [12, 18, 24],
+  "target_faces": [16, 24, 32],
+  "windows": 5,
+  "activated_layer_events": 6,
+  "deactivated_layer_events": 6,
+  "maximum_raw_rbf_conservation_relative_error": 8.018477847373387e-07,
+  "maximum_allowed_raw_rbf_conservation_relative_error": 0.2,
+  "maximum_mapped_conservation_relative_error": 1.470962869909221e-16,
+  "maximum_relaxed_conservation_relative_error": 6.277830809987688e-16,
+  "maximum_moving_boundary_conservation_relative_error": 6.277830809987688e-16,
+  "conservation_tolerance": 1e-08,
+  "restart_matches_continuous_byte_for_byte": true,
+  "full_cylinder_physical_validation_completed": false,
+  "parallel_scaling_completed": false,
+  "mui_commit": "b130c7a12aa8e7ac8d54e9188c4836342daed263"
+}

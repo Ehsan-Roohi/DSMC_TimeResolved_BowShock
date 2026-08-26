@@ -92,3 +92,18 @@ three nonmatching interface resolutions. It closes moving-boundary and restart
 risk before the full OpenFOAM cylinder validation and parallel scaling run.
 The pilot is documented in [`docs/GATE3B.md`](GATE3B.md) and cannot itself be
 reported as completion of the final physical Gate 3B.
+
+Unity status: the pilot passed in job `63628509`. Maximum raw RBF error was
+`8.01848e-7`, maximum moving-boundary conservation error was `6.27783e-16`,
+and restart was byte-identical.
+
+## Gate 3C - physical cylinder preflight
+
+- body-fitted Mach-4.65 argon cylinder in real OpenFOAM-v2312 solvers;
+- MUI continuum-to-DSMC circular reservoir at a predeclared radius;
+- cylinder heat flux and drag compared with full-DSMC block uncertainty; and
+- evidence ordering that prevents the reference from selecting the interface.
+
+Gate 3C deliberately keeps two-way application, adaptive physical interface
+motion, and parallel scaling false in its summary. A PASS authorizes that final
+coupled/scaling gate. See [`docs/GATE3C.md`](GATE3C.md).

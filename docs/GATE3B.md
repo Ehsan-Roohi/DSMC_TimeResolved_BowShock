@@ -32,3 +32,14 @@ Its summary explicitly records that full DSMC cylinder validation and parallel
 scaling are still incomplete. A pilot PASS authorizes embedding the moving
 interface into the real OpenFOAM cylinder solvers; it does not substitute a
 manufactured flux field for that physical evidence.
+
+## Unity result
+
+The pilot passed in Unity job `63628509` with exit code `0:0`. All four C++
+tests passed. Across the coarse, medium, and fine nonmatching layouts, the
+maximum raw RBF defect was `8.01848e-7`; the maximum projected, relaxed, and
+moving-boundary conservation errors were `1.47096e-16`, `6.27783e-16`, and
+`6.27783e-16`, respectively, against a `1e-8` tolerance. Six activation and
+six deactivation events were exercised, and restart reproduced the continuous
+medium result byte for byte. The immutable record is
+[`results/gate3b_pilot_unity_63628509.json`](results/gate3b_pilot_unity_63628509.json).
