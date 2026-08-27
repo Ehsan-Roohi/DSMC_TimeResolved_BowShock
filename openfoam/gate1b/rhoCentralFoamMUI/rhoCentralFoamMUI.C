@@ -116,6 +116,15 @@ double conservationError(const Conserved& current, const Conserved& initial)
 constexpr double boltzmann = 1.380649e-23;
 constexpr double argonGasConstant = 8.31446261815324e3/39.948;
 constexpr double argonCv = 1.5*argonGasConstant;
+#ifdef GATE3F_DYNAMIC
+constexpr const char* liveGateLabel = "GATE3F";
+constexpr const char* liveContinuumUri = "mpi://continuum/gate3f";
+constexpr const char* liveComparisonEnvironment = "GATE3F_COMPARISON";
+#else
+constexpr const char* liveGateLabel = "GATE3E";
+constexpr const char* liveContinuumUri = "mpi://continuum/gate3e";
+constexpr const char* liveComparisonEnvironment = "GATE3E_COMPARISON";
+#endif
 
 Foam::label nearestCell(const Foam::fvMesh& mesh, const mui::point3d& point)
 {
@@ -178,16 +187,17 @@ int main(int argc, char *argv[])
     mui::uniface3d interface
     (
 #ifdef GATE3E_LIVE
-        "mpi://continuum/gate3e"
+        liveContinuumUri
 #else
         "mpi://continuum/gate1b"
 #endif
     );
 #ifdef GATE3E_LIVE
-    const char* comparisonValue = std::getenv("GATE3E_COMPARISON");
+    const char* comparisonValue = std::getenv(liveComparisonEnvironment);
     if (comparisonValue == nullptr)
     {
-        Foam::Info<< "GATE3E_FAIL role=continuum reason=environment"
+        Foam::Info<< liveGateLabel
+                  << "_FAIL role=continuum reason=environment"
                   << Foam::endl;
         return 2;
     }
@@ -198,7 +208,8 @@ int main(int argc, char *argv[])
     }
     catch (const std::exception& error)
     {
-        Foam::Info<< "GATE3E_FAIL role=continuum reason=comparison"
+        Foam::Info<< liveGateLabel
+                  << "_FAIL role=continuum reason=comparison"
                   << " detail=" << error.what() << Foam::endl;
         return 2;
     }
@@ -220,7 +231,8 @@ int main(int argc, char *argv[])
     double maximumVelocityChange = 0.0;
     double maximumTemperatureChange = 0.0;
     double minimumFeedbackScale = 1.0;
-    Foam::Info<< "\nStarting Gate 3E live rhoCentralFoam/DSMC loop\n"
+    Foam::Info<< "\nStarting " << liveGateLabel
+              << " live rhoCentralFoam/DSMC loop\n"
               << Foam::endl;
 #else
     const Conserved initial = continuumConserved(mesh, rho, rhoU, rhoE);
@@ -471,7 +483,7 @@ int main(int argc, char *argv[])
             );
             if (celli < 0 || T[celli] <= 0.0 || p[celli] <= 0.0)
             {
-                Foam::Info<< "GATE3E_FAIL role=continuum"
+                Foam::Info<< liveGateLabel << "_FAIL role=continuum"
                           << " reason=sample_cell face=" << face
                           << " step=" << couplingStep << Foam::endl;
                 return 2;
@@ -485,7 +497,7 @@ int main(int argc, char *argv[])
             state.temperature = T[celli];
             if (!state.physical())
             {
-                Foam::Info<< "GATE3E_FAIL role=continuum"
+                Foam::Info<< liveGateLabel << "_FAIL role=continuum"
                           << " reason=nonphysical_state face=" << face
                           << " step=" << couplingStep << Foam::endl;
                 return 2;
@@ -506,7 +518,8 @@ int main(int argc, char *argv[])
         );
         if (std::abs(acknowledgement - couplingStep) > 1.0e-12)
         {
-            Foam::Info<< "GATE3E_FAIL role=continuum reason=acknowledgement"
+            Foam::Info<< liveGateLabel
+                      << "_FAIL role=continuum reason=acknowledgement"
                       << " step=" << couplingStep
                       << " value=" << acknowledgement << Foam::endl;
             return 2;
@@ -528,7 +541,7 @@ int main(int argc, char *argv[])
                 );
                 if (!feedback[face].physical())
                 {
-                    Foam::Info<< "GATE3E_FAIL role=continuum"
+                    Foam::Info<< liveGateLabel << "_FAIL role=continuum"
                               << " reason=feedback face=" << face
                               << " step=" << couplingStep << Foam::endl;
                     return 2;
@@ -568,7 +581,8 @@ int main(int argc, char *argv[])
             }
             if (!std::isfinite(scale) || scale <= 0.0 || scale > 1.0)
             {
-                Foam::Info<< "GATE3E_FAIL role=continuum reason=scale"
+                Foam::Info<< liveGateLabel
+                          << "_FAIL role=continuum reason=scale"
                           << " value=" << scale << Foam::endl;
                 return 2;
             }
@@ -607,7 +621,7 @@ int main(int argc, char *argv[])
                 )/argonCv;
                 if (!std::isfinite(newTemperature) || newTemperature <= 0.0)
                 {
-                    Foam::Info<< "GATE3E_FAIL role=continuum"
+                    Foam::Info<< liveGateLabel << "_FAIL role=continuum"
                               << " reason=corrected_state face=" << face
                               << " step=" << couplingStep << Foam::endl;
                     return 2;
@@ -684,7 +698,7 @@ int main(int argc, char *argv[])
             );
             minimumFeedbackScale = std::min(minimumFeedbackScale, scale);
             ++completedWindows;
-            Foam::Info<< "GATE3E_WINDOW role=continuum"
+            Foam::Info<< liveGateLabel << "_WINDOW role=continuum"
                       << " window=" << completedWindows - 1
                       << " step=" << couplingStep
                       << " feedback_scale=" << scale
@@ -740,7 +754,7 @@ int main(int argc, char *argv[])
      && maximumVelocityChange > 0.0
      && maximumTemperatureChange > 0.0
      && minimumFeedbackScale > 0.0;
-    Foam::Info<< (pass ? "GATE3E_PASS" : "GATE3E_FAIL")
+    Foam::Info<< liveGateLabel << (pass ? "_PASS" : "_FAIL")
               << " role=continuum_live"
               << " steps=" << couplingStep
               << " windows=" << completedWindows

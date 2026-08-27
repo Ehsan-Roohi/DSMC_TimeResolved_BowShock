@@ -149,3 +149,24 @@ to `3.3881e-21`.
 
 Gate 3E requires the immutable Gate 3D PASS artifact. Its exact scope and
 acceptance criteria are documented in [`docs/GATE3E.md`](GATE3E.md).
+
+Unity status: passed in job `63696880`. Both real solvers completed 1000
+synchronized steps and five 40-sample windows, the feedback-application
+conservation error was `1.55096e-25`, maximum velocity and temperature changes
+were `4.18249 m/s` and `5.57070 K`, and both applications observed exactly 112
+adaptive layer changes. The immutable record is
+[`docs/results/gate3e_unity_63696880.json`](results/gate3e_unity_63696880.json).
+
+## Gate 3F - live dynamic DSMC particle ownership
+
+- move an internal DSMC particle-ownership boundary with the live MUI layer
+  request while retaining the validated Gate 3C mesh topology;
+- preserve every retained particle `(origProc, origId)` across transitions;
+- seed newly activated cells with moment-exact six-particle packets;
+- remove all particles from inactive cells and require zero inactive inventory;
+- require activation mismatch within one DSMC sampling standard error; and
+- close an exact parcel ledger at every live step while retaining Gate 3E's
+  physical two-way feedback and continuum conservation acceptance.
+
+Gate 3F requires the immutable Gate 3E PASS artifact. See
+[`docs/GATE3F.md`](GATE3F.md).

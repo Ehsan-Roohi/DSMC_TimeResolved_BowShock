@@ -7,7 +7,7 @@ Methods in Fluids*, 2013, DOI: `10.1002/fld.3769`).
 Development is gated. A later physical or production case is never submitted
 until the smaller API, transport, conservation, and equilibrium checks pass.
 
-## Current branch: Gate 3E live concurrent coupling
+## Current branch: Gate 3F dynamic DSMC particle ownership
 
 Gate 0 passed on Unity with OpenFOAM-v2312, OpenMPI 4.1.6, and pinned MUI-v2.
 Gate 1A compiled the continuum and DSMC adapter APIs. Gate 1B ran the two real
@@ -38,13 +38,20 @@ window form the reverse momentum/energy packet applied inside the continuing
 continuum solve. The continuum sampling surface moves adaptively, while the
 validated Gate 3C DSMC annulus remains fixed in this bounded gate.
 
+Gate 3E passed in Unity job `63696880`: both real solvers completed 1000 live
+synchronized steps, the feedback-application conservation error was
+`1.55096e-25`, and the continuum and DSMC observed the same 112 layer
+changes. Gate 3F now moves the DSMC particle-ownership boundary inside the
+validated fixed annular mesh, preserving retained particle identities and
+auditing every activation, deactivation, seed, removal, and parcel balance.
+
 ## Unity one-line submission
 
 ```bash
-ROOT=/project/pi_roohie_umass_edu/github_sync/OpenFOAM-MUI-DSMC-NS; BR=mui-dsmc-ns-gate3e; cd "$ROOT" && git fetch origin "$BR:refs/remotes/origin/$BR" && { git checkout "$BR" 2>/dev/null || git checkout -b "$BR" --track "origin/$BR"; } && git merge --ff-only "origin/$BR" && OPENFOAM_MODULE=openfoam/2312 bash scripts/submit_unity_gate3e.sh
+ROOT=/project/pi_roohie_umass_edu/github_sync/OpenFOAM-MUI-DSMC-NS; BR=mui-dsmc-ns-gate3f; cd "$ROOT" && git fetch origin "$BR:refs/remotes/origin/$BR" && { git checkout "$BR" 2>/dev/null || git checkout -b "$BR" --track "origin/$BR"; } && git merge --ff-only "origin/$BR" && OPENFOAM_MODULE=openfoam/2312 bash scripts/submit_unity_gate3f.sh
 ```
 
-The command requires the Gate 3C physical artifacts and Gate 3D PASS summary
+The command requires the Gate 3C physical artifacts and Gate 3E PASS summary
 in the same checkout. It prints the Slurm job ID and exact log path.
 
 ## Gate sequence
@@ -61,20 +68,22 @@ in the same checkout. It prints the Slurm job ID and exact log path.
 - Gate 3D: physical reverse-feedback replay, adaptive transfer surface,
   deterministic restart, and coupling-kernel scaling — passed.
 - Gate 3E: live concurrent derived `rhoCentralFoam`/`dsmcFoam` evolution with
-  adaptive sampling and physical reverse feedback — ready for Unity.
+  adaptive sampling and physical reverse feedback — passed.
+- Gate 3F: live dynamic DSMC particle ownership, moment-exact activation, and
+  exact parcel ledger — ready for Unity.
 
 See [docs/GATES.md](docs/GATES.md) and
-[docs/GATE3E.md](docs/GATE3E.md).
+[docs/GATE3F.md](docs/GATE3F.md).
 
 ## Reproducibility
 
 - MUI is pinned to commit `b130c7a12aa8e7ac8d54e9188c4836342daed263`.
-- Gate 3E refuses to run without strict Gate 3C and Gate 3D PASS artifacts.
+- Gate 3F refuses to run without strict Gate 3C and Gate 3E PASS artifacts.
 - Each Slurm job writes to a unique, non-overwriting run directory.
 - Relaxation is forbidden for unresolved flux windows.
 - Gate 3D already establishes byte-identical feedback restart.
-- A machine-readable Gate 3E summary records the live solver and conservation
-  scope without claiming dynamic DSMC repartitioning.
+- A machine-readable Gate 3F summary records the live solver, conservation,
+  and exact dynamic particle-ownership audit.
 
 ## License
 

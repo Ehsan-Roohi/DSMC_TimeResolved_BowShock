@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(OpenFOAMMUIDSMCNS VERSION 0.6.0 LANGUAGES CXX)
+project(OpenFOAMMUIDSMCNS VERSION 0.7.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -41,6 +41,12 @@ if(BUILD_CORE_TESTS)
     add_executable(test_physical_feedback tests/test_physical_feedback.cpp)
     target_link_libraries(test_physical_feedback PRIVATE muiFoamCore)
     add_test(NAME physical_feedback_restart COMMAND test_physical_feedback)
+
+    add_executable(
+        test_dynamic_particle_domain tests/test_dynamic_particle_domain.cpp
+    )
+    target_link_libraries(test_dynamic_particle_domain PRIVATE muiFoamCore)
+    add_test(NAME dynamic_particle_domain COMMAND test_dynamic_particle_domain)
 endif()
 
 if(BUILD_MUI_GATE0 OR BUILD_MUI_GATE1A OR BUILD_MUI_GATE3A OR BUILD_MUI_GATE3B OR BUILD_MUI_GATE3D)

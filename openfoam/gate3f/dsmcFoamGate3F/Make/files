@@ -1,0 +1,3 @@
+dsmcFoamGate3F.C
+
+EXE = $(GATE3F_BUILD_DIR)/openfoam/dsmcFoamGate3F
