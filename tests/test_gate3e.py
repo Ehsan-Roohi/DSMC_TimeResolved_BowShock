@@ -130,6 +130,18 @@ class Gate3EStaticTest(unittest.TestCase):
         runner = (ROOT / "scripts/run_gate3e.sh").read_text()
         self.assertIn("full_rhoCentralFoam_time_advance=true", continuum)
         self.assertIn("gate3e::fetchFeedback", continuum)
+        self.assertNotIn("T[celli] = newTemperature", continuum)
+        self.assertIn(
+            "e[celli] += argonCv*(newTemperature - oldTemperature)",
+            continuum,
+        )
+        energy_update = continuum.index(
+            "e[celli] += argonCv*(newTemperature - oldTemperature)"
+        )
+        self.assertGreater(
+            continuum.index("thermo.correct();", energy_update),
+            energy_update,
+        )
         self.assertIn("dsmc.evolve()", dsmc)
         self.assertIn("gate3e::pushFeedback", dsmc)
         self.assertIn("rhoCentralFoamGate3E", runner)

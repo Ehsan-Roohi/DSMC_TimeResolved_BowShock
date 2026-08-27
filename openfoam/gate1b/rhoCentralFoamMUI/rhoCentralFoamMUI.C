@@ -613,7 +613,9 @@ int main(int argc, char *argv[])
                     return 2;
                 }
                 U[celli] = newVelocity;
-                T[celli] = newTemperature;
+                // T is a read-only thermodynamic field in OpenFOAM-v2312.
+                // Update sensible internal energy and let thermo.correct()
+                // recover the consistent temperature after all corrections.
                 e[celli] += argonCv*(newTemperature - oldTemperature);
                 rhoU[celli] = density*newVelocity;
                 rhoE[celli] = density*
