@@ -24,13 +24,14 @@ int main()
     const std::string csv = "gate3d-core-test.csv";
     {
         std::ofstream output(csv.c_str());
+        // Python's csv.DictWriter emits CRLF records by default, including on Linux.
         output << "face,theta,area,reference_q,reference_q_ci95,hybrid_q,"
-               << "reference_drag_density,reference_drag_ci95,hybrid_drag_density\n";
+               << "reference_drag_density,reference_drag_ci95,hybrid_drag_density\r\n";
         for (int face = 0; face < 64; ++face)
         {
             output << face << ',' << (face + 0.5)*0.01 << ",2.5e-6,"
                    << 1000.0 + face << ",10," << 1010.0 + face << ','
-                   << 20.0 + face << ",1," << 20.2 + face << '\n';
+                   << 20.0 + face << ",1," << 20.2 + face << "\r\n";
         }
     }
     const std::vector<muiFoam::PhysicalWallSample> samples =

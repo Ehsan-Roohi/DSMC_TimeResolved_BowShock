@@ -50,6 +50,14 @@ inline std::vector<std::string> splitCsv(const std::string& line)
     return fields;
 }
 
+inline void stripCsvCarriageReturn(std::string& line)
+{
+    if (!line.empty() && line.back() == '\r')
+    {
+        line.pop_back();
+    }
+}
+
 inline std::vector<PhysicalWallSample> readGate3CComparison
 (
     const std::string& path,
@@ -61,7 +69,12 @@ inline std::vector<PhysicalWallSample> readGate3CComparison
     const std::string header =
         "face,theta,area,reference_q,reference_q_ci95,hybrid_q,"
         "reference_drag_density,reference_drag_ci95,hybrid_drag_density";
-    if (!input || !std::getline(input, line) || line != header)
+    if (!input || !std::getline(input, line))
+    {
+        throw std::runtime_error("invalid Gate-3C comparison header");
+    }
+    stripCsvCarriageReturn(line);
+    if (line != header)
     {
         throw std::runtime_error("invalid Gate-3C comparison header");
     }
@@ -69,6 +82,7 @@ inline std::vector<PhysicalWallSample> readGate3CComparison
     std::vector<PhysicalWallSample> samples;
     while (std::getline(input, line))
     {
+        stripCsvCarriageReturn(line);
         if (line.empty())
         {
             continue;
