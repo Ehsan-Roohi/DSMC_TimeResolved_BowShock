@@ -129,3 +129,23 @@ Gate 3D is explicitly a replay of completed physical DSMC statistics. Its
 summary keeps `live_concurrent_openfoam_dsmc_completed=false`. A PASS
 authorizes Gate 3E, where the OpenFOAM and DSMC solvers run concurrently while
 the physical interface evolves. See [`docs/GATE3D.md`](GATE3D.md).
+
+Unity status: passed in job `63673123`. All five core tests passed, the
+OpenFOAM feedback application conserved the globally scaled reaction to
+`8.2718e-25`, restart was byte-identical, and the 1/2/4-rank checksums agreed
+to `3.3881e-21`.
+
+## Gate 3E - live concurrent solver coupling
+
+- resume the actual Gate 3C continuum and DSMC physical states;
+- keep derived `rhoCentralFoam` and `dsmcFoam` alive concurrently in one MPMD
+  execution;
+- exchange live continuum reservoir states at every synchronized step;
+- sample and return actual DSMC wall force and heat flux in five windows;
+- apply the conservative, positivity-limited reaction inside the continuing
+  continuum solve; and
+- move and audit the continuum sampling surface without claiming dynamic DSMC
+  repartitioning.
+
+Gate 3E requires the immutable Gate 3D PASS artifact. Its exact scope and
+acceptance criteria are documented in [`docs/GATE3E.md`](GATE3E.md).

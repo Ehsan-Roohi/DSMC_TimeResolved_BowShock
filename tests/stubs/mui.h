@@ -19,6 +19,7 @@ private:
 };
 
 using point2d = point<2>;
+using point3d = point<3>;
 
 template<typename T>
 class sampler_exact2d
@@ -26,6 +27,15 @@ class sampler_exact2d
 };
 
 class temporal_sampler_exact2d
+{
+};
+
+template<typename T>
+class sampler_exact3d
+{
+};
+
+class temporal_sampler_exact3d
 {
 };
 
@@ -46,6 +56,25 @@ public:
     double fetch
     (
         const std::string&, const point2d&, const int,
+        Spatial&, Temporal&
+    )
+    {
+        return 0.0;
+    }
+};
+
+class uniface3d
+{
+public:
+    explicit uniface3d(const std::string&) {}
+
+    void push(const std::string&, const point3d&, const double) {}
+    void commit(const int) {}
+
+    template<typename Spatial, typename Temporal>
+    double fetch
+    (
+        const std::string&, const point3d&, const int,
         Spatial&, Temporal&
     )
     {

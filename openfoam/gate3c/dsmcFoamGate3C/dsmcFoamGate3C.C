@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "fvCFD.H"
 #include "dsmcCloud.H"
+#ifdef GATE3E_LIVE
+#include "Gate3EMui.H"
+#else
 #include "Gate3CMui.H"
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -29,6 +33,11 @@ Foam::label injectMappedReservoir
     mui::uniface3d& interface,
     const int couplingStep,
     std::vector<double>& accumulators
+#ifdef GATE3E_LIVE
+    ,
+    std::vector<int>& liveLayers,
+    int& liveLayerChanges
+#endif
 )
 {
     const Foam::fvMesh& mesh = cloud.mesh();
@@ -80,6 +89,27 @@ Foam::label injectMappedReservoir
                       << " step=" << couplingStep << Foam::endl;
             return -1;
         }
+#ifdef GATE3E_LIVE
+        const int activeLayers = gate3e::fetchActiveLayers
+        (
+            interface,
+            gate3c::transportPoint(pointIndex),
+            couplingStep
+        );
+        if (activeLayers < 4 || activeLayers > 8)
+        {
+            Foam::Info<< "GATE3E_FAIL role=dsmc reason=active_layers"
+                      << " point=" << pointIndex
+                      << " step=" << couplingStep
+                      << " value=" << activeLayers << Foam::endl;
+            return -1;
+        }
+        if (liveLayers[pointIndex] != activeLayers)
+        {
+            liveLayers[pointIndex] = activeLayers;
+            ++liveLayerChanges;
+        }
+#endif
 
         const Foam::vector inwardNormal =
             -faceAreas[facei]/faceAreaMagnitudes[facei];
@@ -201,10 +231,120 @@ Foam::label injectMappedReservoir
                   << " actual=" << patch.size() << Foam::endl;
         return -1;
     }
+#ifndef GATE3E_LIVE
     gate3c::pushAcknowledgement(interface, couplingStep);
     interface.commit(couplingStep);
+#endif
     return inserted;
 }
+
+#ifdef GATE3E_LIVE
+bool accumulateLiveFeedback
+(
+    const Foam::dsmcCloud& cloud,
+    const Foam::label cylinderPatch,
+    std::vector<double>& heat,
+    std::vector<double>& forceX,
+    std::vector<double>& forceY
+)
+{
+    const Foam::polyPatch& cylinder =
+        cloud.mesh().boundaryMesh()[cylinderPatch];
+    const Foam::fvPatchScalarField& heatFlux =
+        cloud.q().boundaryField()[cylinderPatch];
+    const Foam::fvPatchVectorField& forceDensity =
+        cloud.fD().boundaryField()[cylinderPatch];
+    std::vector<bool> seen(gate3c::angularCells, false);
+    forAll(cylinder, facei)
+    {
+        const Foam::point centre = cylinder.faceCentres()[facei];
+        const int pointIndex = gate3c::pointIndex(centre.x(), centre.y());
+        if
+        (
+            pointIndex < 0
+         || seen[pointIndex]
+         || !std::isfinite(heatFlux[facei])
+         || !std::isfinite(forceDensity[facei].x())
+         || !std::isfinite(forceDensity[facei].y())
+        )
+        {
+            return false;
+        }
+        seen[pointIndex] = true;
+        heat[pointIndex] += heatFlux[facei];
+        forceX[pointIndex] += forceDensity[facei].x();
+        forceY[pointIndex] += forceDensity[facei].y();
+    }
+    return cylinder.size() == gate3c::angularCells
+        && std::find(seen.begin(), seen.end(), false) == seen.end();
+}
+
+bool pushLiveFeedback
+(
+    const Foam::dsmcCloud& cloud,
+    const Foam::label cylinderPatch,
+    mui::uniface3d& interface,
+    const int couplingStep,
+    const int sampleCount,
+    const std::vector<double>& heat,
+    const std::vector<double>& forceX,
+    const std::vector<double>& forceY,
+    double& checksum
+)
+{
+    if (sampleCount != gate3e::samplesPerWindow)
+    {
+        return false;
+    }
+    const Foam::polyPatch& cylinder =
+        cloud.mesh().boundaryMesh()[cylinderPatch];
+    const Foam::scalarField& areas = cylinder.magFaceAreas();
+    const double duration =
+        gate3e::windowSteps*cloud.mesh().time().deltaTValue();
+    std::vector<bool> seen(gate3c::angularCells, false);
+    checksum = 0.0;
+    forAll(cylinder, facei)
+    {
+        const Foam::point centre = cylinder.faceCentres()[facei];
+        const int pointIndex = gate3c::pointIndex(centre.x(), centre.y());
+        if
+        (
+            pointIndex < 0
+         || seen[pointIndex]
+         || !std::isfinite(areas[facei])
+         || areas[facei] <= 0.0
+        )
+        {
+            return false;
+        }
+        seen[pointIndex] = true;
+        gate3e::Feedback feedback;
+        feedback.mass = 0.0;
+        feedback.momentumX = forceX[pointIndex]/sampleCount
+            *areas[facei]*duration;
+        feedback.momentumY = forceY[pointIndex]/sampleCount
+            *areas[facei]*duration;
+        feedback.momentumZ = 0.0;
+        feedback.energy = heat[pointIndex]/sampleCount
+            *areas[facei]*duration;
+        feedback.samples = sampleCount;
+        if (!feedback.physical())
+        {
+            return false;
+        }
+        gate3e::pushFeedback
+        (
+            interface,
+            gate3c::transportPoint(pointIndex),
+            feedback
+        );
+        checksum += std::abs(feedback.momentumX)
+            + std::abs(feedback.momentumY)
+            + std::abs(feedback.energy);
+    }
+    return std::find(seen.begin(), seen.end(), false) == seen.end();
+}
+#endif
 
 bool writeWallSample
 (
@@ -280,8 +420,13 @@ int main(int argc, char *argv[])
 
     const char* roleValue = std::getenv("GATE3C_ROLE");
     const std::string role = roleValue == nullptr ? "" : roleValue;
+#ifdef GATE3E_LIVE
+    const bool hybrid = role == "live";
+    const bool reference = false;
+#else
     const bool hybrid = role == "hybrid";
     const bool reference = role == "reference";
+#endif
     if (!hybrid && !reference)
     {
         Foam::Info<< "GATE3C_FAIL role=unknown reason=GATE3C_ROLE"
@@ -302,12 +447,28 @@ int main(int argc, char *argv[])
     std::vector<double> accumulators(gate3c::angularCells, 0.0);
     if (hybrid)
     {
+#ifdef GATE3E_LIVE
+        interface.reset(new mui::uniface3d("mpi://dsmc/gate3e"));
+#else
         interface.reset(new mui::uniface3d("mpi://dsmc/gate3c"));
+#endif
     }
 
     int couplingStep = 0;
     Foam::label totalInserted = 0;
+#ifdef GATE3E_LIVE
+    int feedbackWindows = 0;
+    int feedbackSamples = 0;
+    int liveLayerChanges = 0;
+    std::vector<int> liveLayers(gate3c::angularCells, 6);
+    std::vector<double> heat(gate3c::angularCells, 0.0);
+    std::vector<double> forceX(gate3c::angularCells, 0.0);
+    std::vector<double> forceY(gate3c::angularCells, 0.0);
+    double maximumFeedbackChecksum = 0.0;
+    while (couplingStep < gate3e::kineticSteps && runTime.loop())
+#else
     while (runTime.loop())
+#endif
     {
         ++couplingStep;
         Foam::Info<< "Time = " << runTime.timeName() << Foam::nl << Foam::endl;
@@ -319,6 +480,11 @@ int main(int argc, char *argv[])
                 *interface,
                 couplingStep,
                 accumulators
+#ifdef GATE3E_LIVE
+                ,
+                liveLayers,
+                liveLayerChanges
+#endif
             );
             if (inserted < 0)
             {
@@ -328,6 +494,58 @@ int main(int argc, char *argv[])
         }
 
         dsmc.evolve();
+#ifdef GATE3E_LIVE
+        if (couplingStep % gate3e::sampleStride == 0)
+        {
+            if (!accumulateLiveFeedback
+                (
+                    dsmc, cylinderPatch, heat, forceX, forceY
+                ))
+            {
+                Foam::Info<< "GATE3E_FAIL role=dsmc reason=wall_sample"
+                          << " step=" << couplingStep << Foam::endl;
+                return 2;
+            }
+            ++feedbackSamples;
+        }
+        gate3c::pushAcknowledgement(*interface, couplingStep);
+        if (couplingStep % gate3e::windowSteps == 0)
+        {
+            double checksum = 0.0;
+            if (!pushLiveFeedback
+                (
+                    dsmc, cylinderPatch, *interface, couplingStep,
+                    feedbackSamples, heat, forceX, forceY, checksum
+                ))
+            {
+                Foam::Info<< "GATE3E_FAIL role=dsmc reason=feedback_window"
+                          << " step=" << couplingStep
+                          << " samples=" << feedbackSamples << Foam::endl;
+                return 2;
+            }
+            interface->commit(couplingStep);
+            maximumFeedbackChecksum = std::max
+            (
+                maximumFeedbackChecksum, checksum
+            );
+            ++feedbackWindows;
+            Foam::Info<< "GATE3E_WINDOW role=dsmc"
+                      << " window=" << feedbackWindows - 1
+                      << " step=" << couplingStep
+                      << " samples=" << feedbackSamples
+                      << " flux_checksum=" << checksum
+                      << " active_layer_changes=" << liveLayerChanges
+                      << Foam::endl;
+            std::fill(heat.begin(), heat.end(), 0.0);
+            std::fill(forceX.begin(), forceX.end(), 0.0);
+            std::fill(forceY.begin(), forceY.end(), 0.0);
+            feedbackSamples = 0;
+        }
+        else
+        {
+            interface->commit(couplingStep);
+        }
+#else
         if
         (
             couplingStep >= gate3c::sampleStartStep
@@ -338,6 +556,7 @@ int main(int argc, char *argv[])
         {
             return 2;
         }
+#endif
         if (couplingStep % 100 == 0)
         {
             Foam::Info<< "GATE3C_PROGRESS role=" << role.c_str()
@@ -348,11 +567,29 @@ int main(int argc, char *argv[])
         runTime.write();
     }
 
+#ifdef GATE3E_LIVE
+    const bool pass =
+        couplingStep == gate3e::kineticSteps
+     && feedbackWindows == gate3e::couplingWindows
+     && feedbackSamples == 0
+     && liveLayerChanges > 0
+     && maximumFeedbackChecksum > 0.0;
+    Foam::Info<< (pass ? "GATE3E_PASS" : "GATE3E_FAIL")
+              << " role=dsmc_live"
+              << " steps=" << couplingStep
+              << " windows=" << feedbackWindows
+              << " final_parcels=" << dsmc.size()
+              << " inserted=" << totalInserted
+              << " active_layer_changes=" << liveLayerChanges
+              << " max_flux_checksum=" << maximumFeedbackChecksum
+              << Foam::endl;
+#else
     const bool pass = couplingStep == gate3c::kineticSteps;
     Foam::Info<< (pass ? "GATE3C_PASS" : "GATE3C_FAIL")
               << " role=" << role.c_str()
               << " steps=" << couplingStep
               << " final_parcels=" << dsmc.size()
               << " inserted=" << totalInserted << Foam::endl;
+#endif
     return pass ? 0 : 2;
 }

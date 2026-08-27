@@ -53,3 +53,8 @@ Timing is reported, not forced to show ideal speedup for this small 64-face
 kernel. A Gate 3D PASS sets the two-way application, adaptive replay, and
 coupling-kernel scaling flags true. It deliberately leaves
 `live_concurrent_openfoam_dsmc_completed` false; that is Gate 3E.
+
+Unity status: passed in job `63673123` with exit code `0:0`. The maximum
+relaxed transport conservation error was `6.7763e-21`, OpenFOAM feedback
+application error was `8.2718e-25`, and the restarted state was byte-identical.
+See [`docs/results/gate3d_unity_63673123.json`](results/gate3d_unity_63673123.json).
