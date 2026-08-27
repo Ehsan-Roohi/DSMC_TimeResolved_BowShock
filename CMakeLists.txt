@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(OpenFOAMMUIDSMCNS VERSION 0.4.0 LANGUAGES CXX)
+project(OpenFOAMMUIDSMCNS VERSION 0.5.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,6 +10,7 @@ option(BUILD_MUI_GATE0 "Build the MUI MPMD Gate-0 executable" ON)
 option(BUILD_MUI_GATE1A "Build the fixed-interface Gate-1A executable" OFF)
 option(BUILD_MUI_GATE3A "Build the conservative-flux Gate-3A executable" OFF)
 option(BUILD_MUI_GATE3B "Build the moving-cylinder Gate-3B pilot executable" OFF)
+option(BUILD_MUI_GATE3D "Build the physical-feedback Gate-3D executables" OFF)
 option(BUILD_CORE_TESTS "Build dependency-free core tests" ON)
 
 add_library(muiFoamCore INTERFACE)
@@ -36,9 +37,13 @@ if(BUILD_CORE_TESTS)
     add_executable(test_adaptive_interface tests/test_adaptive_interface.cpp)
     target_link_libraries(test_adaptive_interface PRIVATE muiFoamCore)
     add_test(NAME adaptive_interface_balance COMMAND test_adaptive_interface)
+
+    add_executable(test_physical_feedback tests/test_physical_feedback.cpp)
+    target_link_libraries(test_physical_feedback PRIVATE muiFoamCore)
+    add_test(NAME physical_feedback_restart COMMAND test_physical_feedback)
 endif()
 
-if(BUILD_MUI_GATE0 OR BUILD_MUI_GATE1A OR BUILD_MUI_GATE3A OR BUILD_MUI_GATE3B)
+if(BUILD_MUI_GATE0 OR BUILD_MUI_GATE1A OR BUILD_MUI_GATE3A OR BUILD_MUI_GATE3B OR BUILD_MUI_GATE3D)
     find_package(MPI REQUIRED)
     find_package(MUI REQUIRED)
 endif()
@@ -79,4 +84,22 @@ if(BUILD_MUI_GATE3B)
         src/gate3b/mui_moving_cylinder_flux.cpp
     )
     link_mui_target(mui_moving_cylinder_flux)
+endif()
+
+if(BUILD_MUI_GATE3D)
+    add_executable(
+        mui_physical_feedback
+        src/gate3d/mui_physical_feedback.cpp
+    )
+    link_mui_target(mui_physical_feedback)
+
+    add_executable(
+        physical_feedback_scaling
+        src/gate3d/physical_feedback_scaling.cpp
+    )
+    target_include_directories(physical_feedback_scaling PRIVATE ${MPI_INCLUDE_PATH})
+    target_link_libraries(
+        physical_feedback_scaling
+        PRIVATE muiFoamCore ${MPI_CXX_LIBRARIES} ${MPI_C_LIBRARIES}
+    )
 endif()

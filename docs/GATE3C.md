@@ -39,3 +39,12 @@ reference ordering. It does **not** claim that DSMC flux has already been
 applied back to the continuum solver, that the physical interface has moved,
 or that parallel scaling is complete. Those claims remain machine-readable
 `false` in the Gate 3C summary and are the acceptance items of the next gate.
+
+## Unity result
+
+Gate 3C passed in Unity job `63661524` with exit code `0:0`. The heat-flux
+normalized L2 error was `0.121561` against an uncertainty-based threshold of
+`0.198717`; drag-density error was `0.0846554` against `0.161688`; and total
+drag differed by `1.8287%`. Publisher, hybrid DSMC, and full-DSMC reference all
+completed 1600 steps. The immutable result is
+[`results/gate3c_physical_unity_63661524.json`](results/gate3c_physical_unity_63661524.json).

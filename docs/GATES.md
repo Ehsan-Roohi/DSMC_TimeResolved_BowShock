@@ -107,3 +107,25 @@ and restart was byte-identical.
 Gate 3C deliberately keeps two-way application, adaptive physical interface
 motion, and parallel scaling false in its summary. A PASS authorizes that final
 coupled/scaling gate. See [`docs/GATE3C.md`](GATE3C.md).
+
+Unity status: passed in job `63661524`. Heat-flux normalized L2 error was
+`0.12156` against `0.19872`; drag-density error was `0.08466` against
+`0.16169`; and total-drag relative error was `0.01829`. The immutable record is
+[`docs/results/gate3c_physical_unity_63661524.json`](results/gate3c_physical_unity_63661524.json).
+
+## Gate 3D - physical feedback replay and scaling
+
+- use the actual Gate 3C hybrid DSMC heat and force statistics as the physical
+  reverse-feedback source;
+- transport five integrated conservative components through MUI;
+- apply the equal-and-opposite relaxed packet to real OpenFOAM-v2312 `p/U/T`
+  fields with one global positivity-preserving scale;
+- move each angular transfer location by a bounded physical discrepancy
+  indicator and preserve exact checkpoint/restart state;
+- verify conservation through mapping, relaxation, and field application; and
+- audit the deterministic coupling kernel on one, two, and four MPI ranks.
+
+Gate 3D is explicitly a replay of completed physical DSMC statistics. Its
+summary keeps `live_concurrent_openfoam_dsmc_completed=false`. A PASS
+authorizes Gate 3E, where the OpenFOAM and DSMC solvers run concurrently while
+the physical interface evolves. See [`docs/GATE3D.md`](GATE3D.md).
