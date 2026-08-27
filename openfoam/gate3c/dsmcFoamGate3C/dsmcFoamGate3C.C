@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 #include <memory>
 #include <set>
 #include <string>
@@ -1037,7 +1038,7 @@ int main(int argc, char *argv[])
     Foam::label retainedIdentities = 0;
     Foam::label currentActiveCells = 0;
     Foam::label maximumInactiveParcels = 0;
-    long long maximumOwnershipBalanceError = 0;
+    Foam::label maximumOwnershipBalanceError = 0;
     double maximumActivationZ = 0.0;
     std::vector<int> cellPoint;
     std::vector<int> cellLayer;
@@ -1127,8 +1128,24 @@ int main(int argc, char *argv[])
         ownershipLedger.transitionSeeded = totalTransitionSeeded;
         ownershipLedger.removed = totalDynamicRemoved;
         ownershipLedger.finalParcels = dsmc.size();
-        const long long ownershipError =
+        const long long ownershipErrorWide =
             muiFoam::particleOwnershipBalanceError(ownershipLedger);
+        if
+        (
+            ownershipErrorWide
+          > static_cast<long long>
+            (
+                std::numeric_limits<Foam::label>::max()
+            )
+        )
+        {
+            Foam::Info<< "GATE3F_FAIL role=dsmc"
+                      << " reason=ownership_ledger_range"
+                      << " step=" << couplingStep << Foam::endl;
+            return 2;
+        }
+        const Foam::label ownershipError =
+            static_cast<Foam::label>(ownershipErrorWide);
         maximumOwnershipBalanceError = std::max
         (
             maximumOwnershipBalanceError, ownershipError
