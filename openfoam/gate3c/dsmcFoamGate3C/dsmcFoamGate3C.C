@@ -12,9 +12,12 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <fstream>
+#include <iomanip>
 #include <limits>
 #include <memory>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -25,7 +28,103 @@ namespace
 constexpr double boltzmann = 1.380649e-23;
 
 #ifdef GATE3E_LIVE
-#ifdef GATE3F_DYNAMIC
+#ifdef GATE3G_RECOVERY
+constexpr const char* liveGateLabel = "GATE3G";
+
+const char* liveDsmcUri()
+{
+    const char* value = std::getenv("GATE3G_DSMC_URI");
+    return value == nullptr ? "mpi://dsmc/gate3g" : value;
+}
+
+int gate3gEnvironmentStep(const char* name, const int fallback)
+{
+    const char* value = std::getenv(name);
+    if (value == nullptr)
+    {
+        return fallback;
+    }
+    char* end = nullptr;
+    const long parsed = std::strtol(value, &end, 10);
+    if (end == value || *end != '\0' || parsed < 0 || parsed > 1000)
+    {
+        throw std::runtime_error(std::string("invalid ") + name);
+    }
+    return static_cast<int>(parsed);
+}
+
+std::string gate3gSegmentName()
+{
+    const char* value = std::getenv("GATE3G_SEGMENT");
+    return value == nullptr ? "continuous" : value;
+}
+
+bool readGate3gState
+(
+    const std::string& path,
+    const int expectedStep,
+    std::vector<int>& layers,
+    std::vector<double>& accumulators
+)
+{
+    std::ifstream input(path.c_str());
+    std::string magic;
+    int step = -1;
+    std::size_t count = 0;
+    if (!(input >> magic >> step >> count))
+    {
+        return false;
+    }
+    if
+    (
+        magic != "GATE3G_STATE_V1" || step != expectedStep
+     || count != gate3c::angularCells
+    )
+    {
+        return false;
+    }
+    for (std::size_t point = 0; point < count; ++point)
+    {
+        if (!(input >> layers[point] >> accumulators[point]))
+        {
+            return false;
+        }
+        if
+        (
+            layers[point] < 4 || layers[point] > 8
+         || !std::isfinite(accumulators[point])
+        )
+        {
+            return false;
+        }
+    }
+    input >> std::ws;
+    return input.eof();
+}
+
+bool writeGate3gState
+(
+    const std::string& path,
+    const int step,
+    const std::vector<int>& layers,
+    const std::vector<double>& accumulators
+)
+{
+    std::ofstream output(path.c_str(), std::ios::trunc);
+    if (!output)
+    {
+        return false;
+    }
+    output << "GATE3G_STATE_V1 " << step << ' ' << layers.size() << '\n'
+           << std::setprecision(17);
+    for (std::size_t point = 0; point < layers.size(); ++point)
+    {
+        output << layers[point] << ' ' << accumulators[point] << '\n';
+    }
+    output.flush();
+    return output.good();
+}
+#elif defined(GATE3F_DYNAMIC)
 constexpr const char* liveGateLabel = "GATE3F";
 constexpr const char* liveDsmcUri = "mpi://dsmc/gate3f";
 #else
@@ -1012,7 +1111,11 @@ int main(int argc, char *argv[])
     if (hybrid)
     {
 #ifdef GATE3E_LIVE
+#ifdef GATE3G_RECOVERY
+        interface.reset(new mui::uniface3d(liveDsmcUri()));
+#else
         interface.reset(new mui::uniface3d(liveDsmcUri));
+#endif
 #else
         interface.reset(new mui::uniface3d("mpi://dsmc/gate3c"));
 #endif
@@ -1030,6 +1133,65 @@ int main(int argc, char *argv[])
     std::vector<double> forceY(gate3c::angularCells, 0.0);
     double maximumFeedbackChecksum = 0.0;
 #ifdef GATE3F_DYNAMIC
+#ifdef GATE3G_RECOVERY
+    int gate3gStopStep = gate3e::kineticSteps;
+    std::string gate3gSegment;
+    const char* gate3gStateValue = std::getenv("GATE3G_STATE_FILE");
+    if (gate3gStateValue == nullptr)
+    {
+        Foam::Info<< "GATE3G_FAIL role=dsmc reason=state_environment"
+                  << Foam::endl;
+        return 2;
+    }
+    const std::string gate3gStateFile(gate3gStateValue);
+    try
+    {
+        couplingStep = gate3gEnvironmentStep("GATE3G_START_STEP", 0);
+        gate3gStopStep = gate3gEnvironmentStep
+        (
+            "GATE3G_STOP_STEP", gate3e::kineticSteps
+        );
+        gate3gSegment = gate3gSegmentName();
+    }
+    catch (const std::exception& error)
+    {
+        Foam::Info<< "GATE3G_FAIL role=dsmc reason=segment_environment"
+                  << " detail=" << error.what() << Foam::endl;
+        return 2;
+    }
+    if
+    (
+        couplingStep >= gate3gStopStep
+     || couplingStep % gate3e::windowSteps != 0
+     || gate3gStopStep % gate3e::windowSteps != 0
+    )
+    {
+        Foam::Info<< "GATE3G_FAIL role=dsmc reason=segment_bounds"
+                  << " start=" << couplingStep
+                  << " stop=" << gate3gStopStep << Foam::endl;
+        return 2;
+    }
+    if
+    (
+        couplingStep > 0
+     && !readGate3gState
+        (
+            gate3gStateFile, couplingStep, liveLayers, accumulators
+        )
+    )
+    {
+        Foam::Info<< "GATE3G_FAIL role=dsmc reason=state_restore"
+                  << " step=" << couplingStep << Foam::endl;
+        return 2;
+    }
+    if (couplingStep > 0)
+    {
+        Foam::Info<< "GATE3G_STATE_LOADED step=" << couplingStep
+                  << " layers=" << liveLayers.size()
+                  << " accumulators=" << accumulators.size()
+                  << Foam::endl;
+    }
+#endif
     const Foam::label initialParcels = dsmc.size();
     Foam::label totalTransitionSeeded = 0;
     Foam::label totalDynamicRemoved = 0;
@@ -1056,7 +1218,11 @@ int main(int argc, char *argv[])
         return 2;
     }
 #endif
+#ifdef GATE3G_RECOVERY
+    while (couplingStep < gate3gStopStep && runTime.loop())
+#else
     while (couplingStep < gate3e::kineticSteps && runTime.loop())
+#endif
 #else
     while (runTime.loop())
 #endif
@@ -1197,7 +1363,13 @@ int main(int argc, char *argv[])
             );
             ++feedbackWindows;
             Foam::Info<< liveGateLabel << "_WINDOW role=dsmc"
+#ifdef GATE3G_RECOVERY
+                      << " segment=" << gate3gSegment.c_str()
+                      << " window="
+                      << couplingStep/gate3e::windowSteps - 1
+#else
                       << " window=" << feedbackWindows - 1
+#endif
                       << " step=" << couplingStep
                       << " samples=" << feedbackSamples
                       << " flux_checksum=" << checksum
@@ -1247,6 +1419,65 @@ int main(int argc, char *argv[])
 
 #ifdef GATE3E_LIVE
 #ifdef GATE3F_DYNAMIC
+#ifdef GATE3G_RECOVERY
+    const int gate3gStartStep = gate3gEnvironmentStep
+    (
+        "GATE3G_START_STEP", 0
+    );
+    const int gate3gExpectedWindows =
+        (gate3gStopStep - gate3gStartStep)/gate3e::windowSteps;
+    const bool stateWritten = writeGate3gState
+    (
+        gate3gStateFile, couplingStep, liveLayers, accumulators
+    );
+    if (stateWritten)
+    {
+        Foam::Info<< "GATE3G_STATE_WRITTEN step=" << couplingStep
+                  << " layers=" << liveLayers.size()
+                  << " accumulators=" << accumulators.size()
+                  << Foam::endl;
+    }
+    const bool pass =
+        couplingStep == gate3gStopStep
+     && feedbackWindows == gate3gExpectedWindows
+     && feedbackSamples == 0
+     && stateWritten
+     && (gate3gStartStep > 0 || liveLayerChanges > 0)
+     && (gate3gStartStep > 0 || dynamicActivatedCells > 0)
+     && (gate3gStartStep > 0 || dynamicDeactivatedCells > 0)
+     && (gate3gStartStep > 0 || totalTransitionSeeded > 0)
+     && totalDynamicRemoved > 0
+     && retainedIdentities > 0
+     && maximumInactiveParcels == 0
+     && maximumOwnershipBalanceError == 0
+     && maximumActivationZ <= 1.0
+     && maximumFeedbackChecksum > 0.0;
+    Foam::Info<< (pass ? "GATE3G_PASS" : "GATE3G_FAIL")
+              << " role=dsmc_live"
+              << " segment=" << gate3gSegment.c_str()
+              << " start_step=" << gate3gStartStep
+              << " stop_step=" << gate3gStopStep
+              << " steps=" << couplingStep - gate3gStartStep
+              << " first_step=" << gate3gStartStep + 1
+              << " last_step=" << couplingStep
+              << " windows=" << feedbackWindows
+              << " final_parcels=" << dsmc.size()
+              << " inserted=" << totalInserted
+              << " active_layer_changes=" << liveLayerChanges
+              << " max_flux_checksum=" << maximumFeedbackChecksum
+              << " dynamic_activated_cells=" << dynamicActivatedCells
+              << " deactivated_cells=" << dynamicDeactivatedCells
+              << " seeded_parcels=" << totalTransitionSeeded
+              << " removed_parcels=" << totalDynamicRemoved
+              << " retained_identities=" << retainedIdentities
+              << " inactive_parcels=" << maximumInactiveParcels
+              << " ownership_balance_error="
+              << maximumOwnershipBalanceError
+              << " max_overlap_z=" << maximumActivationZ
+              << " checkpoint_written="
+              << (stateWritten ? "true" : "false")
+              << Foam::endl;
+#else
     const bool pass =
         couplingStep == gate3e::kineticSteps
      && feedbackWindows == gate3e::couplingWindows
@@ -1279,6 +1510,7 @@ int main(int argc, char *argv[])
               << maximumOwnershipBalanceError
               << " max_overlap_z=" << maximumActivationZ
               << Foam::endl;
+#endif
 #else
     const bool pass =
         couplingStep == gate3e::kineticSteps

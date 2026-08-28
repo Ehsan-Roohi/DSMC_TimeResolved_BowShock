@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -116,7 +117,38 @@ double conservationError(const Conserved& current, const Conserved& initial)
 constexpr double boltzmann = 1.380649e-23;
 constexpr double argonGasConstant = 8.31446261815324e3/39.948;
 constexpr double argonCv = 1.5*argonGasConstant;
-#ifdef GATE3F_DYNAMIC
+#ifdef GATE3G_RECOVERY
+constexpr const char* liveGateLabel = "GATE3G";
+constexpr const char* liveComparisonEnvironment = "GATE3G_COMPARISON";
+
+const char* liveContinuumUri()
+{
+    const char* value = std::getenv("GATE3G_CONTINUUM_URI");
+    return value == nullptr ? "mpi://continuum/gate3g" : value;
+}
+
+int gate3gEnvironmentStep(const char* name, const int fallback)
+{
+    const char* value = std::getenv(name);
+    if (value == nullptr)
+    {
+        return fallback;
+    }
+    char* end = nullptr;
+    const long parsed = std::strtol(value, &end, 10);
+    if (end == value || *end != '\0' || parsed < 0 || parsed > 1000)
+    {
+        throw std::runtime_error(std::string("invalid ") + name);
+    }
+    return static_cast<int>(parsed);
+}
+
+std::string gate3gSegmentName()
+{
+    const char* value = std::getenv("GATE3G_SEGMENT");
+    return value == nullptr ? "continuous" : value;
+}
+#elif defined(GATE3F_DYNAMIC)
 constexpr const char* liveGateLabel = "GATE3F";
 constexpr const char* liveContinuumUri = "mpi://continuum/gate3f";
 constexpr const char* liveComparisonEnvironment = "GATE3F_COMPARISON";
@@ -187,7 +219,11 @@ int main(int argc, char *argv[])
     mui::uniface3d interface
     (
 #ifdef GATE3E_LIVE
+#ifdef GATE3G_RECOVERY
+        liveContinuumUri()
+#else
         liveContinuumUri
+#endif
 #else
         "mpi://continuum/gate1b"
 #endif
@@ -224,9 +260,54 @@ int main(int argc, char *argv[])
         );
     }
     int couplingStep = 0;
+#ifdef GATE3G_RECOVERY
+    int gate3gStopStep = gate3e::kineticSteps;
+    std::string gate3gSegment;
+    try
+    {
+        couplingStep = gate3gEnvironmentStep("GATE3G_START_STEP", 0);
+        gate3gStopStep = gate3gEnvironmentStep
+        (
+            "GATE3G_STOP_STEP", gate3e::kineticSteps
+        );
+        gate3gSegment = gate3gSegmentName();
+    }
+    catch (const std::exception& error)
+    {
+        Foam::Info<< "GATE3G_FAIL role=continuum reason=segment_environment"
+                  << " detail=" << error.what() << Foam::endl;
+        return 2;
+    }
+    if
+    (
+        couplingStep >= gate3gStopStep
+     || couplingStep % gate3e::windowSteps != 0
+     || gate3gStopStep % gate3e::windowSteps != 0
+    )
+    {
+        Foam::Info<< "GATE3G_FAIL role=continuum reason=segment_bounds"
+                  << " start=" << couplingStep
+                  << " stop=" << gate3gStopStep << Foam::endl;
+        return 2;
+    }
+#endif
     int completedWindows = 0;
     int adaptiveLayerChanges = 0;
     std::vector<int> previousLayers(gate3c::angularCells, 6);
+#ifdef GATE3G_RECOVERY
+    if (couplingStep > 0)
+    {
+        const int previousWindow =
+            (couplingStep - 1)/gate3e::windowSteps;
+        for (int face = 0; face < gate3c::angularCells; ++face)
+        {
+            previousLayers[face] = muiFoam::physicalLayersAtWindow
+            (
+                indicators[face], previousWindow
+            );
+        }
+    }
+#endif
     double maximumFeedbackConservationError = 0.0;
     double maximumVelocityChange = 0.0;
     double maximumTemperatureChange = 0.0;
@@ -275,7 +356,11 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef GATE3E_LIVE
+#ifdef GATE3G_RECOVERY
+    while (couplingStep < gate3gStopStep && runTime.run())
+#else
     while (couplingStep < gate3e::kineticSteps && runTime.run())
+#endif
 #else
     while (runTime.run())
 #endif
@@ -699,7 +784,13 @@ int main(int argc, char *argv[])
             minimumFeedbackScale = std::min(minimumFeedbackScale, scale);
             ++completedWindows;
             Foam::Info<< liveGateLabel << "_WINDOW role=continuum"
+#ifdef GATE3G_RECOVERY
+                      << " segment=" << gate3gSegment.c_str()
+                      << " window="
+                      << couplingStep/gate3e::windowSteps - 1
+#else
                       << " window=" << completedWindows - 1
+#endif
                       << " step=" << couplingStep
                       << " feedback_scale=" << scale
                       << " conservation_rel=" << conservationError
@@ -746,6 +837,42 @@ int main(int argc, char *argv[])
     }
 
 #ifdef GATE3E_LIVE
+#ifdef GATE3G_RECOVERY
+    const int gate3gExpectedWindows =
+        (gate3gStopStep - gate3gEnvironmentStep("GATE3G_START_STEP", 0))
+       /gate3e::windowSteps;
+    const int gate3gStartStep = gate3gEnvironmentStep
+    (
+        "GATE3G_START_STEP", 0
+    );
+    const bool pass =
+        couplingStep == gate3gStopStep
+     && completedWindows == gate3gExpectedWindows
+     && (gate3gStartStep > 0 || adaptiveLayerChanges > 0)
+     && maximumFeedbackConservationError <= 1.0e-12
+     && maximumVelocityChange > 0.0
+     && maximumTemperatureChange > 0.0
+     && minimumFeedbackScale > 0.0;
+    Foam::Info<< (pass ? "GATE3G_PASS" : "GATE3G_FAIL")
+              << " role=continuum_live"
+              << " segment=" << gate3gSegment.c_str()
+              << " start_step=" << gate3gStartStep
+              << " stop_step=" << gate3gStopStep
+              << " steps=" << couplingStep - gate3gStartStep
+              << " first_step=" << gate3gStartStep + 1
+              << " last_step=" << couplingStep
+              << " windows=" << completedWindows
+              << " full_rhoCentralFoam_time_advance=true"
+              << " two_way_feedback_applied=true"
+              << " adaptive_sampling_surface=true"
+              << " adaptive_layer_changes=" << adaptiveLayerChanges
+              << " min_feedback_scale=" << minimumFeedbackScale
+              << " max_conservation_rel="
+              << maximumFeedbackConservationError
+              << " max_delta_U=" << maximumVelocityChange
+              << " max_delta_T=" << maximumTemperatureChange
+              << Foam::endl;
+#else
     const bool pass =
         couplingStep == gate3e::kineticSteps
      && completedWindows == gate3e::couplingWindows
@@ -768,6 +895,7 @@ int main(int argc, char *argv[])
               << " max_delta_U=" << maximumVelocityChange
               << " max_delta_T=" << maximumTemperatureChange
               << Foam::endl;
+#endif
 #else
     const bool pass =
         couplingStep >= 5

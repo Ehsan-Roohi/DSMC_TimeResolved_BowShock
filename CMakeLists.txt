@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(OpenFOAMMUIDSMCNS VERSION 0.7.0 LANGUAGES CXX)
+project(OpenFOAMMUIDSMCNS VERSION 0.8.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,6 +11,7 @@ option(BUILD_MUI_GATE1A "Build the fixed-interface Gate-1A executable" OFF)
 option(BUILD_MUI_GATE3A "Build the conservative-flux Gate-3A executable" OFF)
 option(BUILD_MUI_GATE3B "Build the moving-cylinder Gate-3B pilot executable" OFF)
 option(BUILD_MUI_GATE3D "Build the physical-feedback Gate-3D executables" OFF)
+option(BUILD_GATE3G_SCALING "Build the Gate-3G restart scaling kernel" OFF)
 option(BUILD_CORE_TESTS "Build dependency-free core tests" ON)
 
 add_library(muiFoamCore INTERFACE)
@@ -52,6 +53,19 @@ endif()
 if(BUILD_MUI_GATE0 OR BUILD_MUI_GATE1A OR BUILD_MUI_GATE3A OR BUILD_MUI_GATE3B OR BUILD_MUI_GATE3D)
     find_package(MPI REQUIRED)
     find_package(MUI REQUIRED)
+elseif(BUILD_GATE3G_SCALING)
+    find_package(MPI REQUIRED)
+endif()
+
+if(BUILD_GATE3G_SCALING)
+    add_executable(
+        dynamic_restart_scaling
+        src/gate3g/dynamic_restart_scaling.cpp
+    )
+    target_link_libraries(
+        dynamic_restart_scaling
+        PRIVATE muiFoamCore MPI::MPI_CXX
+    )
 endif()
 
 function(link_mui_target target_name)

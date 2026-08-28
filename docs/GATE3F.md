@@ -45,3 +45,11 @@ Gate 3F passes only if:
 
 A PASS sets `adaptive_particle_domain_completed=true` while explicitly
 recording `mesh_topology_changed=false`.
+
+## Unity result
+
+Gate 3F passed in job `63702483` with exit code `0:0`. The maximum inactive
+parcel count and ownership balance error were zero, 7,091,281 retained
+particle identities were audited, and the feedback-application conservation
+error was `1.654361e-24`. The immutable record is
+[`results/gate3f_unity_63702483.json`](results/gate3f_unity_63702483.json).

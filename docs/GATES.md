@@ -170,3 +170,24 @@ adaptive layer changes. The immutable record is
 
 Gate 3F requires the immutable Gate 3E PASS artifact. See
 [`docs/GATE3F.md`](GATE3F.md).
+
+Unity status: passed in job `63702483`. Both live solvers completed 1000
+synchronized steps, the dynamic particle ledger and inactive-particle count
+were exactly zero, and 7,091,281 retained identities were audited. The
+immutable record is
+[`docs/results/gate3f_unity_63702483.json`](results/gate3f_unity_63702483.json).
+
+## Gate 3G - live coupled checkpoint/restart
+
+- compare a 1000-step continuous live calculation with a 600+400-step
+  checkpoint/restart calculation;
+- preserve the 64 dynamic layer requests and fractional reservoir state;
+- prove that restart continues at step 601 without a duplicated or missing
+  coupling step;
+- require exact particle ownership before and after restart;
+- compare stochastic DSMC observables inside declared sampling tolerances; and
+- audit the dynamic ownership/checkpoint kernel on one, two, and four MPI
+  ranks without claiming full-solver domain-decomposition scaling.
+
+Gate 3G requires the immutable Gate 3F PASS artifact. See
+[`docs/GATE3G.md`](GATE3G.md).
