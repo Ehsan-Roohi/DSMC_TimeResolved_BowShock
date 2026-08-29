@@ -121,6 +121,16 @@ class Gate3GTest(unittest.TestCase):
         self.assertIn("run_pair restart 600 1000", runner)
         self.assertIn("gate3g_scaling_4.log", runner)
 
+    def test_dsmc_wrapper_includes_openfoam_solver_headers(self) -> None:
+        options = (
+            ROOT / "openfoam/gate3g/dsmcFoamGate3G/Make/options"
+        ).read_text()
+        self.assertIn(
+            "-I$(FOAM_APP)/solvers/discreteMethods/dsmc/dsmcFoam",
+            options,
+        )
+        self.assertLess(options.index("-lfiniteVolume"), options.index("-lDSMC"))
+
     def test_gate3f_result_validator(self) -> None:
         result = ROOT / "docs/results/gate3f_unity_63702483.json"
         if not result.exists():

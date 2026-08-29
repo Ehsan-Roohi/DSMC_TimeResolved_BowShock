@@ -1,7 +1,8 @@
 EXE_INC = \
+    -I$(FOAM_APP)/solvers/discreteMethods/dsmc/dsmcFoam \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/lagrangian/basic/lnInclude \
     -I$(LIB_SRC)/lagrangian/DSMC/lnInclude \
-    -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \
     -I$(MUI_INCLUDE_DIR) \
     -I$(MUI_GATE1B_COMMON) \
@@ -12,9 +13,9 @@ EXE_INC = \
     -I$(MPI_ARCH_PATH)/include
 
 EXE_LIBS = \
+    -lmeshTools \
+    -lfiniteVolume \
     -llagrangian \
     -lDSMC \
-    -lfiniteVolume \
-    -lmeshTools \
     -L$(MPI_ARCH_PATH)/lib \
     -lmpi
