@@ -69,6 +69,7 @@ class Gate3ITest(unittest.TestCase):
         self.assertIn("checkMesh -parallel", runner)
         self.assertIn("for ranks in 1 2 4", runner)
         self.assertIn("mui_domain_decomposition_probe", runner)
+        self.assertIn('BUILD_DIR=${BUILD_DIR:-"$ROOT/build/gate3i-$RUN_ID"}', runner)
 
     def test_builder_pins_mui_package_and_mpi_compiler(self) -> None:
         builder = (ROOT / "scripts/build_gate3i.sh").read_text(encoding="utf-8")

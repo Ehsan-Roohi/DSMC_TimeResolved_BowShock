@@ -3,8 +3,8 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 REPORT_DIR=${REPORT_DIR:-"$ROOT/reports"}
-BUILD_DIR=${BUILD_DIR:-"$ROOT/build/gate3i"}
 RUN_ID=${SLURM_JOB_ID:-manual-$(date -u +%Y%m%dT%H%M%SZ)}
+BUILD_DIR=${BUILD_DIR:-"$ROOT/build/gate3i-$RUN_ID"}
 RUN_DIR=${RUN_DIR:-"$ROOT/run/gate3i-$RUN_ID"}
 if [[ -e "$RUN_DIR" ]]; then
     printf 'ERROR: refusing to overwrite Gate 3I run directory: %s\n' \
