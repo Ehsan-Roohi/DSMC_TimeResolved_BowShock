@@ -208,3 +208,19 @@ four-rank kernel efficiency was `0.92578`. The immutable record is
 
 Gate 3H is explicitly ensemble throughput scaling, not spatial decomposition
 of one coupled case. See [`docs/GATE3H.md`](GATE3H.md).
+
+Unity status: passed in job `63739461`. All replicas advanced both complete
+solvers, feedback conservation remained below `4.136e-25`, and throughput on
+eight solver ranks reached `5.368x`. The immutable record is
+[`docs/results/gate3h_unity_63739461.json`](results/gate3h_unity_63739461.json).
+
+## Gate 3I - spatial-decomposition preflight
+
+- decompose the actual continuum and hybrid DSMC meshes with Scotch;
+- validate both meshes with OpenFOAM parallel `checkMesh` on 2 and 4 ranks;
+- exchange rank-addressed values bidirectionally through MUI with 1+1, 2+2,
+  and 4+4 ranks; and
+- record the exact boundary that distributed physical solver advancement is
+  deferred to Gate 3J.
+
+See [`docs/GATE3I.md`](GATE3I.md).

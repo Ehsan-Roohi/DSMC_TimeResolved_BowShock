@@ -12,6 +12,7 @@ option(BUILD_MUI_GATE3A "Build the conservative-flux Gate-3A executable" OFF)
 option(BUILD_MUI_GATE3B "Build the moving-cylinder Gate-3B pilot executable" OFF)
 option(BUILD_MUI_GATE3D "Build the physical-feedback Gate-3D executables" OFF)
 option(BUILD_GATE3G_SCALING "Build the Gate-3G restart scaling kernel" OFF)
+option(BUILD_MUI_GATE3I "Build the Gate-3I distributed-transport probe" OFF)
 option(BUILD_CORE_TESTS "Build dependency-free core tests" ON)
 
 add_library(muiFoamCore INTERFACE)
@@ -50,7 +51,7 @@ if(BUILD_CORE_TESTS)
     add_test(NAME dynamic_particle_domain COMMAND test_dynamic_particle_domain)
 endif()
 
-if(BUILD_MUI_GATE0 OR BUILD_MUI_GATE1A OR BUILD_MUI_GATE3A OR BUILD_MUI_GATE3B OR BUILD_MUI_GATE3D)
+if(BUILD_MUI_GATE0 OR BUILD_MUI_GATE1A OR BUILD_MUI_GATE3A OR BUILD_MUI_GATE3B OR BUILD_MUI_GATE3D OR BUILD_MUI_GATE3I)
     find_package(MPI REQUIRED)
     find_package(MUI REQUIRED)
 elseif(BUILD_GATE3G_SCALING)
@@ -122,4 +123,12 @@ if(BUILD_MUI_GATE3D)
         physical_feedback_scaling
         PRIVATE muiFoamCore ${MPI_CXX_LIBRARIES} ${MPI_C_LIBRARIES}
     )
+endif()
+
+if(BUILD_MUI_GATE3I)
+    add_executable(
+        mui_domain_decomposition_probe
+        src/gate3i/mui_domain_decomposition_probe.cpp
+    )
+    link_mui_target(mui_domain_decomposition_probe)
 endif()

@@ -1,0 +1,22 @@
+{
+  "gate": "3H-FULL-SOLVER-ENSEMBLE-SCALING",
+  "status": "PASS",
+  "full_solver_parallel_scaling_completed": true,
+  "domain_decomposition_completed": false,
+  "coupled_replica_counts": [1, 2, 4],
+  "total_solver_rank_counts": [2, 4, 8],
+  "steps_per_replica": 400,
+  "coupling_windows_per_replica": 2,
+  "all_replicas_advanced_both_full_solvers": true,
+  "all_replicas_applied_two_way_feedback": true,
+  "all_replicas_closed_particle_ownership_ledger": true,
+  "maximum_feedback_conservation_relative_error": 4.13590306277e-25,
+  "maximum_flux_relative_difference": 0.0,
+  "maximum_final_parcel_population_relative_difference": 0.0,
+  "scaling": [
+    {"coupled_replicas": 1, "total_solver_ranks": 2, "wall_seconds": 10.522198528, "throughput_speedup": 1.0, "parallel_efficiency": 1.0},
+    {"coupled_replicas": 2, "total_solver_ranks": 4, "wall_seconds": 7.779433728, "throughput_speedup": 2.7051322489265894, "parallel_efficiency": 1.3525661244632947},
+    {"coupled_replicas": 4, "total_solver_ranks": 8, "wall_seconds": 7.84059648, "throughput_speedup": 5.368060225948524, "parallel_efficiency": 1.342015056487131}
+  ],
+  "unity_job_id": 63739461
+}
