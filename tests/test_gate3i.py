@@ -70,6 +70,13 @@ class Gate3ITest(unittest.TestCase):
         self.assertIn("for ranks in 1 2 4", runner)
         self.assertIn("mui_domain_decomposition_probe", runner)
 
+    def test_builder_pins_mui_package_and_mpi_compiler(self) -> None:
+        builder = (ROOT / "scripts/build_gate3i.sh").read_text(encoding="utf-8")
+        self.assertIn('MUI_CONFIG="$MUI_PREFIX/MUI-2.0.0/share/MUI-2.0.0/cmake"', builder)
+        self.assertIn('-DMUI_DIR="$MUI_CONFIG"', builder)
+        self.assertIn('-DCMAKE_CXX_COMPILER="$(command -v mpic++)"', builder)
+        self.assertIn('cmake --build "$MUI_BUILD" --target install', builder)
+
     def test_gate3h_result_validator(self) -> None:
         result = ROOT / "docs/results/gate3h_unity_63739461.json"
         completed = subprocess.run(
