@@ -191,3 +191,20 @@ immutable record is
 
 Gate 3G requires the immutable Gate 3F PASS artifact. See
 [`docs/GATE3G.md`](GATE3G.md).
+
+Unity status: passed in job `63737420`. The split calculation resumed at step
+601 without a missing or duplicated coupling step, particle ownership remained
+exact, the maximum post-restart flux difference was `0.05967`, and the
+four-rank kernel efficiency was `0.92578`. The immutable record is
+[`docs/results/gate3g_unity_63737420.json`](results/gate3g_unity_63737420.json).
+
+## Gate 3H - full-solver MPMD ensemble scaling
+
+- run one, two, and four independent live coupled solver pairs concurrently;
+- advance both real derived solvers for 400 steps in every replica;
+- retain physical two-way feedback and exact particle ownership audits;
+- require stochastic observables to remain inside Gate 3G tolerances; and
+- report whole-solver throughput speedup and efficiency on 2, 4, and 8 ranks.
+
+Gate 3H is explicitly ensemble throughput scaling, not spatial decomposition
+of one coupled case. See [`docs/GATE3H.md`](GATE3H.md).
