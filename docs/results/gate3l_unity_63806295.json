@@ -1,0 +1,20 @@
+{
+  "gate": "3L-WHOLE-SOLVER-STRONG-SCALING",
+  "status": "PASS",
+  "unity_job_id": 63806295,
+  "source_commit": "3ef06046b0b62cfafb0dc3992c4f86bafac64035",
+  "coupled_steps_per_layout": 1000,
+  "rank_layouts": ["1+1", "2+2", "4+4"],
+  "whole_solver_spatial_scaling_completed": true,
+  "unique_interface_ownership_all_layouts": true,
+  "global_wall_flux_reduction_all_layouts": true,
+  "maximum_particle_ownership_balance_error": 0,
+  "maximum_inactive_parcels": 0,
+  "scaling": [
+    {"ranks_per_solver": 1, "wall_seconds": 13.925914, "speedup": 1.0, "parallel_efficiency": 1.0},
+    {"ranks_per_solver": 2, "wall_seconds": 13.809735, "speedup": 1.008412833410634, "parallel_efficiency": 0.504206416705317},
+    {"ranks_per_solver": 4, "wall_seconds": 21.360554, "speedup": 0.6519453568479544, "parallel_efficiency": 0.1629863392119886}
+  ],
+  "selected_production_layout": "2+2",
+  "selection_reason": "lowest measured wall time; 4+4 is beyond the strong-scaling saturation point"
+}
