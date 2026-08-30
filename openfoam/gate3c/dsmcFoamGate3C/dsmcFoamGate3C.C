@@ -40,6 +40,8 @@ const char* liveDsmcUri()
     return value == nullptr ? "mpi://dsmc/gate3g" : value;
 }
 
+constexpr long gate3gMaximumSegmentStep = 10000;
+
 int gate3gEnvironmentStep(const char* name, const int fallback)
 {
     const char* value = std::getenv(name);
@@ -49,7 +51,11 @@ int gate3gEnvironmentStep(const char* name, const int fallback)
     }
     char* end = nullptr;
     const long parsed = std::strtol(value, &end, 10);
-    if (end == value || *end != '\0' || parsed < 0 || parsed > 1000)
+    if
+    (
+        end == value || *end != '\0' || parsed < 0
+     || parsed > gate3gMaximumSegmentStep
+    )
     {
         throw std::runtime_error(std::string("invalid ") + name);
     }

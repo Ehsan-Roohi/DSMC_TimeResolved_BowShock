@@ -9,4 +9,10 @@ class Gate3MTest(unittest.TestCase):
  def test_gate3l_record(self):
   r=subprocess.run(["python3",str(ROOT/"scripts/require_gate3l_pass.py"),str(ROOT/"docs/results/gate3l_unity_63806295.json")],capture_output=True,text=True)
   self.assertEqual(r.returncode,0,r.stderr)
+ def test_long_segment_has_bounded_solver_support(self):
+  for path in (ROOT/"openfoam/gate1b/rhoCentralFoamMUI/rhoCentralFoamMUI.C",ROOT/"openfoam/gate3c/dsmcFoamGate3C/dsmcFoamGate3C.C"):
+   source=path.read_text()
+   self.assertIn("gate3gMaximumSegmentStep = 10000",source)
+   self.assertIn("parsed > gate3gMaximumSegmentStep",source)
+   self.assertNotIn("parsed > 1000",source)
 if __name__=="__main__":unittest.main()

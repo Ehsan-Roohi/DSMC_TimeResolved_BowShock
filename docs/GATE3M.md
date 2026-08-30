@@ -10,3 +10,7 @@ finite nonzero wall flux, persistent adaptive DSMC layers, zero ownership
 imbalance, zero inactive parcels, global wall-flux reduction, unique interface
 ownership, a written checkpoint, and feedback conservation error below
 `1e-12`.
+
+The recovery-segment parser accepts non-negative, window-aligned endpoints no
+larger than 10,000.  Gate 3M exercises that explicit safety ceiling; larger or
+malformed endpoints remain rejected before time advancement.
