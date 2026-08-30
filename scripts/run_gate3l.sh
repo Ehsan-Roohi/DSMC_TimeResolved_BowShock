@@ -16,6 +16,9 @@ print(json.load(open(sys.argv[1]))["run_dir"]+"/ranks_1")
 PY
 )
 MPI=${MPI_LAUNCHER:-$(command -v mpirun)}
+# Unity nodes do not uniformly expose the UCX shared receive queue. The
+# OpenMPI ob1 transport is sufficient for this single-node scaling gate.
+export OMPI_MCA_pml=${OMPI_MCA_pml:-ob1}
 for ranks in 1 2 4;do
  C="$RUN_DIR/ranks_$ranks";mkdir -p "$C";cp -a "$SRC/continuum" "$C/continuum";cp -a "$SRC/hybrid" "$C/hybrid"
  for spec in continuum:rhoCentralFoamGate3J hybrid:dsmcFoamGate3J;do
@@ -41,9 +44,9 @@ run_layout(){
  local begin=$(date +%s%N)
  timeout --signal=TERM --kill-after=30 2400 "$MPI" \
   -np "$r" env GATE3G_COMPARISON="$CMP" GATE3G_CONTINUUM_URI="mpi://continuum/$session" GATE3G_SEGMENT="scaling_$r" GATE3G_START_STEP=0 GATE3G_STOP_STEP=1000 \
-   "$BUILD_DIR/openfoam/rhoCentralFoamGate3J" "${par[@]}" -case "$c/continuum" \
+   "$BUILD_DIR/openfoam/rhoCentralFoamGate3J" "${par[@]}" -world continuum -case "$c/continuum" \
   : -np "$r" env GATE3C_ROLE=live GATE3G_DSMC_URI="mpi://dsmc/$session" GATE3G_SEGMENT="scaling_$r" GATE3G_START_STEP=0 GATE3G_STOP_STEP=1000 GATE3G_STATE_FILE="$c/gate3l.state" \
-   "$BUILD_DIR/openfoam/dsmcFoamGate3J" "${par[@]}" -case "$c/hybrid" 2>&1|tee -a "$log"
+   "$BUILD_DIR/openfoam/dsmcFoamGate3J" "${par[@]}" -world dsmc -case "$c/hybrid" 2>&1|tee -a "$log"
  local end=$(date +%s%N);local wall=$(awk -v s="$begin" -v e="$end" 'BEGIN{printf "%.6f",(e-s)/1e9}')
  echo "GATE3L_TIMING ranks_per_solver=$r total_ranks=$((2*r)) wall_seconds=$wall"|tee -a "$log"
  grep -q 'GATE3J_PASS role=continuum_distributed' "$log";grep -q 'GATE3J_PASS role=dsmc_distributed' "$log"
