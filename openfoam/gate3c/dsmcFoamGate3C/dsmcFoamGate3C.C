@@ -1638,7 +1638,9 @@ int main(int argc, char *argv[])
      && stateWritten
      && (gate3gStartStep > 0 || liveLayerChanges > 0)
      && (gate3gStartStep > 0 || dynamicActivatedCells > 0)
+#ifndef GATE3J_DISTRIBUTED
      && (gate3gStartStep > 0 || dynamicDeactivatedCells > 0)
+#endif
      && (gate3gStartStep > 0 || totalTransitionSeeded > 0)
      && totalDynamicRemoved > 0
      && retainedIdentities > 0
