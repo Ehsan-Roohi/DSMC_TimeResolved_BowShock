@@ -88,17 +88,32 @@ run_rank_pair() {
         case_dir="$case_root/$case_name"
         role_log="$case_root/checkMesh_${role}.log"
         if (( ranks == 1 )); then
-            checkMesh -case "$case_dir" -latestTime >"$role_log" 2>&1
+            if ! checkMesh -case "$case_dir" -constant >"$role_log" 2>&1; then
+                cat "$role_log" | tee -a "$log_file"
+                printf 'GATE3I_FAIL reason=checkMesh role=%s ranks=%s\n' \
+                    "$role" "$ranks" | tee -a "$log_file"
+                return 1
+            fi
             processor_dirs=0
         else
             cp "$ROOT/cases/gate3i/decomposeParDict" \
                 "$case_dir/system/decomposeParDict"
             foamDictionary "$case_dir/system/decomposeParDict" \
                 -entry numberOfSubdomains -set "$ranks"
-            decomposePar -case "$case_dir" -force -latestTime \
-                >>"$role_log" 2>&1
-            "$MPI_LAUNCHER" -np "$ranks" checkMesh -parallel \
-                -case "$case_dir" -latestTime >>"$role_log" 2>&1
+            if ! decomposePar -case "$case_dir" -force -no-fields \
+                >"$role_log" 2>&1; then
+                cat "$role_log" | tee -a "$log_file"
+                printf 'GATE3I_FAIL reason=decomposePar role=%s ranks=%s\n' \
+                    "$role" "$ranks" | tee -a "$log_file"
+                return 1
+            fi
+            if ! "$MPI_LAUNCHER" -np "$ranks" checkMesh -parallel \
+                -case "$case_dir" -constant >>"$role_log" 2>&1; then
+                cat "$role_log" | tee -a "$log_file"
+                printf 'GATE3I_FAIL reason=checkMesh role=%s ranks=%s\n' \
+                    "$role" "$ranks" | tee -a "$log_file"
+                return 1
+            fi
             processor_dirs=$(find "$case_dir" -maxdepth 1 -type d \
                 -name 'processor[0-9]*' | wc -l)
         fi

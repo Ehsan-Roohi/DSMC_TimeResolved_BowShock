@@ -66,7 +66,10 @@ class Gate3ITest(unittest.TestCase):
     def test_runner_uses_real_openfoam_decomposition(self) -> None:
         runner = (ROOT / "scripts/run_gate3i.sh").read_text(encoding="utf-8")
         self.assertIn("decomposePar -case", runner)
+        self.assertIn("-force -no-fields", runner)
         self.assertIn("checkMesh -parallel", runner)
+        self.assertIn('-case "$case_dir" -constant', runner)
+        self.assertIn("GATE3I_FAIL reason=decomposePar", runner)
         self.assertIn("for ranks in 1 2 4", runner)
         self.assertIn("mui_domain_decomposition_probe", runner)
         self.assertIn('BUILD_DIR=${BUILD_DIR:-"$ROOT/build/gate3i-$RUN_ID"}', runner)
