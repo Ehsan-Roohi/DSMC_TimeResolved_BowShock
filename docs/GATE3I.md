@@ -5,6 +5,8 @@ decomposes the actual Gate 3H continuum and hybrid DSMC meshes with OpenFOAM
 `decomposePar -no-fields`, validates both decomposed meshes with parallel
 `checkMesh -constant`, and
 exercises bidirectional MUI transport with 1+1, 2+2, and 4+4 MPI ranks.
+The decomposition uses OpenFOAM's built-in `simple` method with `(N 1 1)`
+Cartesian x-slabs so the gate does not depend on an optional Scotch library.
 
 ## PASS criteria
 

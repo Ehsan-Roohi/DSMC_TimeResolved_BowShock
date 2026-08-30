@@ -67,12 +67,19 @@ class Gate3ITest(unittest.TestCase):
         runner = (ROOT / "scripts/run_gate3i.sh").read_text(encoding="utf-8")
         self.assertIn("decomposePar -case", runner)
         self.assertIn("-force -no-fields", runner)
+        self.assertIn("-entry simpleCoeffs/n", runner)
+        self.assertIn('-set "($ranks 1 1)"', runner)
         self.assertIn("checkMesh -parallel", runner)
         self.assertIn('-case "$case_dir" -constant', runner)
         self.assertIn("GATE3I_FAIL reason=decomposePar", runner)
         self.assertIn("for ranks in 1 2 4", runner)
         self.assertIn("mui_domain_decomposition_probe", runner)
         self.assertIn('BUILD_DIR=${BUILD_DIR:-"$ROOT/build/gate3i-$RUN_ID"}', runner)
+        dictionary = (ROOT / "cases/gate3i/decomposeParDict").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("method          simple;", dictionary)
+        self.assertIn("n           (4 1 1);", dictionary)
 
     def test_builder_pins_mui_package_and_mpi_compiler(self) -> None:
         builder = (ROOT / "scripts/build_gate3i.sh").read_text(encoding="utf-8")

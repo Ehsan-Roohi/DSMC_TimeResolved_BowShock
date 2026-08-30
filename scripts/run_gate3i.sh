@@ -100,6 +100,8 @@ run_rank_pair() {
                 "$case_dir/system/decomposeParDict"
             foamDictionary "$case_dir/system/decomposeParDict" \
                 -entry numberOfSubdomains -set "$ranks"
+            foamDictionary "$case_dir/system/decomposeParDict" \
+                -entry simpleCoeffs/n -set "($ranks 1 1)"
             if ! decomposePar -case "$case_dir" -force -no-fields \
                 >"$role_log" 2>&1; then
                 cat "$role_log" | tee -a "$log_file"

@@ -54,7 +54,7 @@ def analyze(log_paths: Iterable[Path], run_dir: str) -> dict[str, object]:
         "status": "PASS",
         "prerequisite": "Gate3H full-solver ensemble scaling PASS",
         "openfoam_cases": ["continuum", "hybrid_dsmc"],
-        "decomposition_method": "scotch",
+        "decomposition_method": "simple Cartesian x-slabs",
         "decomposed_openfoam_meshes_validated": True,
         "parallel_checkMesh_completed": True,
         "multi_rank_bidirectional_mui_transport_completed": True,

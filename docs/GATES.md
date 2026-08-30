@@ -216,7 +216,8 @@ eight solver ranks reached `5.368x`. The immutable record is
 
 ## Gate 3I - spatial-decomposition preflight
 
-- decompose the actual continuum and hybrid DSMC meshes with Scotch;
+- decompose the actual continuum and hybrid DSMC meshes into portable
+  Cartesian x-slabs without an external graph-partitioner dependency;
 - validate both meshes with OpenFOAM parallel `checkMesh` on 2 and 4 ranks;
 - exchange rank-addressed values bidirectionally through MUI with 1+1, 2+2,
   and 4+4 ranks; and
