@@ -31,7 +31,7 @@ def live_log() -> str:
             "stop_step=200 steps=200 first_step=1 last_step=200 windows=1 "
             "final_parcels=6400 inserted=100 active_layer_changes=10 "
             "max_flux_checksum=5e-6 dynamic_activated_cells=1 "
-            "deactivated_cells=20 seeded_parcels=66 removed_parcels=100 "
+            "deactivated_cells=0 seeded_parcels=66 removed_parcels=100 "
             "retained_identities=1000 inactive_parcels=0 "
             "ownership_balance_error=0 max_overlap_z=0.3 "
             "checkpoint_written=true",
