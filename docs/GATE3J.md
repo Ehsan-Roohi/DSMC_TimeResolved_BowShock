@@ -16,7 +16,7 @@ a distributed MUI application domain for each solver.
   coupling window on two spatial ranks each.
 - The continuum applies nonzero two-way feedback with conservation error at or
   below `1e-12`.
-- The global DSMC parcel ledger closes exactly and no inactive parcel remains.
+- The global DSMC parcel ledger closes exactly and no inactive parcel remains.\n- Adaptive motion must activate and seed cells; deactivation is recorded when the\n  physical 200-step trajectory crosses the opposite threshold, but is not forced.
 
 ## Scope boundary
 
