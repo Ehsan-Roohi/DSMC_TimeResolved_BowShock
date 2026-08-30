@@ -225,3 +225,22 @@ eight solver ranks reached `5.368x`. The immutable record is
   deferred to Gate 3J.
 
 See [`docs/GATE3I.md`](GATE3I.md).
+
+Unity status: passed in job `63786279`. Both physical meshes passed serial and
+parallel validation at 1/2/4 ranks per application, and bidirectional MUI
+transport passed at 1+1, 2+2, and 4+4 ranks. The immutable record is
+[`docs/results/gate3i_unity_63786279.json`](results/gate3i_unity_63786279.json).
+
+## Gate 3J - live spatially distributed coupling
+
+- decompose the complete continuum and hybrid DSMC fields across two ranks per
+  solver;
+- place both OpenFOAM applications in separate parallel sub-worlds;
+- enforce unique distributed ownership of continuum samples and DSMC cells;
+- reduce physical DSMC wall force and heat globally before MUI feedback; and
+- advance both real solvers for one live 200-step coupling window with exact
+  particle ownership and conservative feedback audits.
+
+Gate 3J requires the immutable Gate 3I PASS artifact. It proves the first live
+2+2-rank spatially decomposed calculation, while distributed restart and
+spatial strong scaling remain later gates. See [`docs/GATE3J.md`](GATE3J.md).

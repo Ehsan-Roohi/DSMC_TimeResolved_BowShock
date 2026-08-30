@@ -1,0 +1,41 @@
+{
+  "gate": "3I-SPATIAL-DECOMPOSITION-PREFLIGHT",
+  "status": "PASS",
+  "prerequisite": "Gate3H full-solver ensemble scaling PASS",
+  "openfoam_cases": [
+    "continuum",
+    "hybrid_dsmc"
+  ],
+  "decomposition_method": "simple Cartesian x-slabs",
+  "decomposed_openfoam_meshes_validated": true,
+  "parallel_checkMesh_completed": true,
+  "multi_rank_bidirectional_mui_transport_completed": true,
+  "ranks_per_application": [
+    1,
+    2,
+    4
+  ],
+  "total_mpi_rank_counts": [
+    2,
+    4,
+    8
+  ],
+  "rank_inventory": [
+    {
+      "ranks_per_application": 1,
+      "total_mpi_ranks": 2
+    },
+    {
+      "ranks_per_application": 2,
+      "total_mpi_ranks": 4
+    },
+    {
+      "ranks_per_application": 4,
+      "total_mpi_ranks": 8
+    }
+  ],
+  "live_distributed_openfoam_dsmc_completed": false,
+  "scope": "decomposition and MUI transport preflight; no distributed solver advance",
+  "run_dir": "/project/pi_roohie_umass_edu/github_sync/OpenFOAM-MUI-DSMC-NS/run/gate3i-63786279",
+  "unity_job_id": 63786279
+}

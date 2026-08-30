@@ -13,6 +13,9 @@
 #include "Gate3EMui.H"
 #include "muiFoam/PhysicalFeedback.hpp"
 #endif
+#ifdef GATE3J_DISTRIBUTED
+#include "PstreamReduceOps.H"
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -161,6 +164,12 @@ constexpr const char* liveComparisonEnvironment = "GATE3E_COMPARISON";
 Foam::label nearestCell(const Foam::fvMesh& mesh, const mui::point3d& point)
 {
     const Foam::point sample(point[0], point[1], point[2]);
+#ifdef GATE3J_DISTRIBUTED
+    const Foam::label localCell = mesh.findCell(sample);
+    Foam::label owners = localCell >= 0 ? 1 : 0;
+    Foam::reduce(owners, Foam::sumOp<Foam::label>());
+    return owners == 1 ? localCell : Foam::label(-2);
+#else
     Foam::label nearest = -1;
     Foam::scalar nearestDistance = Foam::GREAT;
     forAll(mesh.C(), celli)
@@ -173,6 +182,7 @@ Foam::label nearestCell(const Foam::fvMesh& mesh, const mui::point3d& point)
         }
     }
     return nearest;
+#endif
 }
 
 double relativeDifference(const double actual, const double expected)
@@ -566,13 +576,27 @@ int main(int argc, char *argv[])
                 mesh,
                 gate3e::continuumSamplePoint(face, activeLayers)
             );
+#ifdef GATE3J_DISTRIBUTED
+            if
+            (
+                celli < -1
+             || (celli >= 0 && (T[celli] <= 0.0 || p[celli] <= 0.0))
+            )
+#else
             if (celli < 0 || T[celli] <= 0.0 || p[celli] <= 0.0)
+#endif
             {
                 Foam::Info<< liveGateLabel << "_FAIL role=continuum"
                           << " reason=sample_cell face=" << face
                           << " step=" << couplingStep << Foam::endl;
                 return 2;
             }
+#ifdef GATE3J_DISTRIBUTED
+            if (celli < 0)
+            {
+                continue;
+            }
+#endif
             targetCells[face] = celli;
             gate3c::State state;
             state.numberDensity = p[celli]/(boltzmann*T[celli]);
@@ -632,6 +656,12 @@ int main(int argc, char *argv[])
                     return 2;
                 }
                 const Foam::label celli = targetCells[face];
+#ifdef GATE3J_DISTRIBUTED
+                if (celli < 0)
+                {
+                    continue;
+                }
+#endif
                 const double density = rho[celli];
                 const double volume = mesh.V()[celli];
                 const Foam::vector packetMomentum
@@ -664,6 +694,11 @@ int main(int argc, char *argv[])
                 requestedMomentum -= packetMomentum;
                 requestedEnergy -= feedback[face].energy;
             }
+#ifdef GATE3J_DISTRIBUTED
+            Foam::reduce(scale, Foam::minOp<double>());
+            Foam::reduce(requestedMomentum, Foam::sumOp<Foam::vector>());
+            Foam::reduce(requestedEnergy, Foam::sumOp<double>());
+#endif
             if (!std::isfinite(scale) || scale <= 0.0 || scale > 1.0)
             {
                 Foam::Info<< liveGateLabel
@@ -679,6 +714,12 @@ int main(int argc, char *argv[])
             for (int face = 0; face < gate3c::angularCells; ++face)
             {
                 const Foam::label celli = targetCells[face];
+#ifdef GATE3J_DISTRIBUTED
+                if (celli < 0)
+                {
+                    continue;
+                }
+#endif
                 const double density = rho[celli];
                 const double volume = mesh.V()[celli];
                 const Foam::vector oldVelocity = U[celli];
@@ -734,6 +775,18 @@ int main(int argc, char *argv[])
                     std::abs(newTemperature - oldTemperature)
                 );
             }
+#ifdef GATE3J_DISTRIBUTED
+            Foam::reduce(appliedMomentum, Foam::sumOp<Foam::vector>());
+            Foam::reduce(appliedEnergy, Foam::sumOp<double>());
+            Foam::reduce
+            (
+                windowMaximumVelocityChange, Foam::maxOp<double>()
+            );
+            Foam::reduce
+            (
+                windowMaximumTemperatureChange, Foam::maxOp<double>()
+            );
+#endif
             U.correctBoundaryConditions();
             e.correctBoundaryConditions();
             thermo.correct();
@@ -872,6 +925,17 @@ int main(int argc, char *argv[])
               << " max_delta_U=" << maximumVelocityChange
               << " max_delta_T=" << maximumTemperatureChange
               << Foam::endl;
+#ifdef GATE3J_DISTRIBUTED
+    Foam::label distributedPass = pass ? 1 : 0;
+    Foam::reduce(distributedPass, Foam::minOp<Foam::label>());
+    Foam::Info<< (distributedPass ? "GATE3J_PASS" : "GATE3J_FAIL")
+              << " role=continuum_distributed"
+              << " spatial_ranks=" << Foam::Pstream::nProcs()
+              << " unique_interface_ownership=true"
+              << " full_rhoCentralFoam_time_advance=true"
+              << " two_way_feedback_applied=true"
+              << Foam::endl;
+#endif
 #else
     const bool pass =
         couplingStep == gate3e::kineticSteps
@@ -909,5 +973,9 @@ int main(int argc, char *argv[])
               << Foam::endl;
 #endif
 
+#ifdef GATE3J_DISTRIBUTED
+    return pass && distributedPass ? 0 : 2;
+#else
     return pass ? 0 : 2;
+#endif
 }

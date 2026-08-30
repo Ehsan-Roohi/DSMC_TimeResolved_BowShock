@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "fvCFD.H"
 #include "dsmcCloud.H"
+#ifdef GATE3J_DISTRIBUTED
+#include "PstreamReduceOps.H"
+#endif
 #ifdef GATE3F_DYNAMIC
 #include "Gate3FMui.H"
 #elif defined(GATE3E_LIVE)
@@ -405,12 +408,28 @@ bool buildDynamicAddressing
         cellLayer[celli] = layer;
         pointLayerToCell[address] = celli;
     }
+#ifdef GATE3J_DISTRIBUTED
+    Foam::label globalCells = mesh.nCells();
+    Foam::reduce(globalCells, Foam::sumOp<Foam::label>());
+    for (std::size_t address = 0; address < pointLayerToCell.size(); ++address)
+    {
+        Foam::label owners = pointLayerToCell[address] >= 0 ? 1 : 0;
+        Foam::reduce(owners, Foam::sumOp<Foam::label>());
+        if (owners != 1)
+        {
+            return false;
+        }
+    }
+    return globalCells
+        == gate3c::angularCells*muiFoam::kineticMeshLayers;
+#else
     return mesh.nCells()
         == gate3c::angularCells*muiFoam::kineticMeshLayers
         && std::find
         (
             pointLayerToCell.begin(), pointLayerToCell.end(), Foam::label(-1)
         ) == pointLayerToCell.end();
+#endif
 }
 
 bool dynamicCellActive
@@ -829,6 +848,12 @@ bool updateDynamicParticleDomain
         [
             point*muiFoam::kineticMeshLayers + outerLayer
         ];
+#ifdef GATE3J_DISTRIBUTED
+        if (ownerCell < 0)
+        {
+            continue;
+        }
+#endif
         const Foam::label inserted = injectDynamicReservoirPoint
         (
             cloud, states[point], point, liveLayers[point], ownerCell,
@@ -918,6 +943,9 @@ bool accumulateLiveFeedback
     const Foam::fvPatchVectorField& forceDensity =
         cloud.fD().boundaryField()[cylinderPatch];
     std::vector<bool> seen(gate3c::angularCells, false);
+#ifdef GATE3J_DISTRIBUTED
+    Foam::label valid = 1;
+#endif
     forAll(cylinder, facei)
     {
         const Foam::point centre = cylinder.faceCentres()[facei];
@@ -931,15 +959,34 @@ bool accumulateLiveFeedback
          || !std::isfinite(forceDensity[facei].y())
         )
         {
+#ifdef GATE3J_DISTRIBUTED
+            valid = 0;
+            continue;
+#else
             return false;
+#endif
         }
         seen[pointIndex] = true;
         heat[pointIndex] += heatFlux[facei];
         forceX[pointIndex] += forceDensity[facei].x();
         forceY[pointIndex] += forceDensity[facei].y();
     }
+#ifdef GATE3J_DISTRIBUTED
+    Foam::reduce(valid, Foam::minOp<Foam::label>());
+    for (int point = 0; point < gate3c::angularCells; ++point)
+    {
+        Foam::label owners = seen[point] ? 1 : 0;
+        Foam::reduce(owners, Foam::sumOp<Foam::label>());
+        if (owners != 1)
+        {
+            valid = 0;
+        }
+    }
+    return valid == 1;
+#else
     return cylinder.size() == gate3c::angularCells
         && std::find(seen.begin(), seen.end(), false) == seen.end();
+#endif
 }
 
 bool pushLiveFeedback
@@ -965,6 +1012,74 @@ bool pushLiveFeedback
     const double duration =
         gate3e::windowSteps*cloud.mesh().time().deltaTValue();
     std::vector<bool> seen(gate3c::angularCells, false);
+#ifdef GATE3J_DISTRIBUTED
+    std::vector<double> globalHeat(heat);
+    std::vector<double> globalForceX(forceX);
+    std::vector<double> globalForceY(forceY);
+    std::vector<double> globalAreas(gate3c::angularCells, 0.0);
+    Foam::label valid = 1;
+    forAll(cylinder, facei)
+    {
+        const Foam::point centre = cylinder.faceCentres()[facei];
+        const int pointIndex = gate3c::pointIndex(centre.x(), centre.y());
+        if
+        (
+            pointIndex < 0 || seen[pointIndex]
+         || !std::isfinite(areas[facei]) || areas[facei] <= 0.0
+        )
+        {
+            valid = 0;
+            continue;
+        }
+        seen[pointIndex] = true;
+        globalAreas[pointIndex] = areas[facei];
+    }
+    for (int point = 0; point < gate3c::angularCells; ++point)
+    {
+        Foam::reduce(globalHeat[point], Foam::sumOp<double>());
+        Foam::reduce(globalForceX[point], Foam::sumOp<double>());
+        Foam::reduce(globalForceY[point], Foam::sumOp<double>());
+        Foam::reduce(globalAreas[point], Foam::sumOp<double>());
+        Foam::label owners = seen[point] ? 1 : 0;
+        Foam::reduce(owners, Foam::sumOp<Foam::label>());
+        if (owners != 1 || globalAreas[point] <= 0.0)
+        {
+            valid = 0;
+        }
+    }
+    checksum = 0.0;
+    if (Foam::Pstream::master())
+    {
+        for (int pointIndex = 0; pointIndex < gate3c::angularCells; ++pointIndex)
+        {
+            gate3e::Feedback feedback;
+            feedback.mass = 0.0;
+            feedback.momentumX = globalForceX[pointIndex]/sampleCount
+                *globalAreas[pointIndex]*duration;
+            feedback.momentumY = globalForceY[pointIndex]/sampleCount
+                *globalAreas[pointIndex]*duration;
+            feedback.momentumZ = 0.0;
+            feedback.energy = globalHeat[pointIndex]/sampleCount
+                *globalAreas[pointIndex]*duration;
+            feedback.samples = sampleCount;
+            if (!feedback.physical())
+            {
+                valid = 0;
+                continue;
+            }
+            gate3e::pushFeedback
+            (
+                interface, gate3c::transportPoint(pointIndex), feedback
+            );
+            checksum += std::abs(feedback.momentumX)
+                + std::abs(feedback.momentumY)
+                + std::abs(feedback.energy);
+        }
+    }
+    Foam::reduce(valid, Foam::minOp<Foam::label>());
+    Foam::reduce(checksum, Foam::maxOp<double>());
+    return valid == 1 && checksum > 0.0;
+#else
     checksum = 0.0;
     forAll(cylinder, facei)
     {
@@ -1006,6 +1121,7 @@ bool pushLiveFeedback
             + std::abs(feedback.energy);
     }
     return std::find(seen.begin(), seen.end(), false) == seen.end();
+#endif
 }
 #endif
 
@@ -1099,7 +1215,15 @@ int main(int argc, char *argv[])
 
     const Foam::label cylinderPatch =
         mesh.boundaryMesh().findPatchID("cylinder");
-    if (cylinderPatch < 0 || dsmc.typeIdList().size() != 1 || dsmc.size() == 0)
+    Foam::label initialCloudSize = dsmc.size();
+#ifdef GATE3J_DISTRIBUTED
+    Foam::reduce(initialCloudSize, Foam::sumOp<Foam::label>());
+#endif
+    if
+    (
+        cylinderPatch < 0 || dsmc.typeIdList().size() != 1
+     || initialCloudSize == 0
+    )
     {
         Foam::Info<< "GATE3C_FAIL role=" << role.c_str()
                   << " reason=invalid_case_or_cloud" << Foam::endl;
@@ -1284,16 +1408,46 @@ int main(int argc, char *argv[])
         (
             dsmc, liveLayers, cellPoint, cellLayer
         );
+#ifdef GATE3J_DISTRIBUTED
+        Foam::label auditedInactiveParcels = inactiveParcels;
+        Foam::label auditedInitialParcels = initialParcels;
+        Foam::label auditedReservoirInserted = totalInserted;
+        Foam::label auditedTransitionSeeded = totalTransitionSeeded;
+        Foam::label auditedRemoved = totalDynamicRemoved;
+        Foam::label auditedFinalParcels = dsmc.size();
+        Foam::reduce
+        (
+            auditedInactiveParcels, Foam::sumOp<Foam::label>()
+        );
+        Foam::reduce(auditedInitialParcels, Foam::sumOp<Foam::label>());
+        Foam::reduce
+        (
+            auditedReservoirInserted, Foam::sumOp<Foam::label>()
+        );
+        Foam::reduce
+        (
+            auditedTransitionSeeded, Foam::sumOp<Foam::label>()
+        );
+        Foam::reduce(auditedRemoved, Foam::sumOp<Foam::label>());
+        Foam::reduce(auditedFinalParcels, Foam::sumOp<Foam::label>());
+#else
+        const Foam::label auditedInactiveParcels = inactiveParcels;
+        const Foam::label auditedInitialParcels = initialParcels;
+        const Foam::label auditedReservoirInserted = totalInserted;
+        const Foam::label auditedTransitionSeeded = totalTransitionSeeded;
+        const Foam::label auditedRemoved = totalDynamicRemoved;
+        const Foam::label auditedFinalParcels = dsmc.size();
+#endif
         maximumInactiveParcels = std::max
         (
-            maximumInactiveParcels, inactiveParcels
+            maximumInactiveParcels, auditedInactiveParcels
         );
         muiFoam::ParticleOwnershipLedger ownershipLedger;
-        ownershipLedger.initialParcels = initialParcels;
-        ownershipLedger.reservoirInserted = totalInserted;
-        ownershipLedger.transitionSeeded = totalTransitionSeeded;
-        ownershipLedger.removed = totalDynamicRemoved;
-        ownershipLedger.finalParcels = dsmc.size();
+        ownershipLedger.initialParcels = auditedInitialParcels;
+        ownershipLedger.reservoirInserted = auditedReservoirInserted;
+        ownershipLedger.transitionSeeded = auditedTransitionSeeded;
+        ownershipLedger.removed = auditedRemoved;
+        ownershipLedger.finalParcels = auditedFinalParcels;
         const long long ownershipErrorWide =
             muiFoam::particleOwnershipBalanceError(ownershipLedger);
         if
@@ -1316,11 +1470,11 @@ int main(int argc, char *argv[])
         (
             maximumOwnershipBalanceError, ownershipError
         );
-        if (inactiveParcels != 0 || ownershipError != 0)
+        if (auditedInactiveParcels != 0 || ownershipError != 0)
         {
             Foam::Info<< "GATE3F_FAIL role=dsmc reason=ownership_ledger"
                       << " step=" << couplingStep
-                      << " inactive_parcels=" << inactiveParcels
+                      << " inactive_parcels=" << auditedInactiveParcels
                       << " balance_error=" << ownershipError << Foam::endl;
             return 2;
         }
@@ -1340,7 +1494,14 @@ int main(int argc, char *argv[])
             }
             ++feedbackSamples;
         }
+#ifdef GATE3J_DISTRIBUTED
+        if (Foam::Pstream::master())
+        {
+            gate3c::pushAcknowledgement(*interface, couplingStep);
+        }
+#else
         gate3c::pushAcknowledgement(*interface, couplingStep);
+#endif
         if (couplingStep % gate3e::windowSteps == 0)
         {
             double checksum = 0.0;
@@ -1426,10 +1587,43 @@ int main(int argc, char *argv[])
     );
     const int gate3gExpectedWindows =
         (gate3gStopStep - gate3gStartStep)/gate3e::windowSteps;
+#ifdef GATE3J_DISTRIBUTED
+    for (double& accumulator : accumulators)
+    {
+        Foam::reduce(accumulator, Foam::sumOp<double>());
+    }
+    Foam::reduce(totalInserted, Foam::sumOp<Foam::label>());
+    Foam::reduce(totalTransitionSeeded, Foam::sumOp<Foam::label>());
+    Foam::reduce(totalDynamicRemoved, Foam::sumOp<Foam::label>());
+    Foam::reduce(dynamicActivatedCells, Foam::sumOp<Foam::label>());
+    Foam::reduce(dynamicDeactivatedCells, Foam::sumOp<Foam::label>());
+    Foam::reduce(retainedIdentities, Foam::sumOp<Foam::label>());
+    Foam::reduce(maximumInactiveParcels, Foam::maxOp<Foam::label>());
+    Foam::reduce
+    (
+        maximumOwnershipBalanceError, Foam::maxOp<Foam::label>()
+    );
+    Foam::reduce(maximumActivationZ, Foam::maxOp<double>());
+    Foam::reduce(maximumFeedbackChecksum, Foam::maxOp<double>());
+    Foam::label globalFinalParcels = dsmc.size();
+    Foam::reduce(globalFinalParcels, Foam::sumOp<Foam::label>());
+    bool localStateWritten = true;
+    if (Foam::Pstream::master())
+    {
+        localStateWritten = writeGate3gState
+        (
+            gate3gStateFile, couplingStep, liveLayers, accumulators
+        );
+    }
+    Foam::label stateWriteCount = localStateWritten ? 1 : 0;
+    Foam::reduce(stateWriteCount, Foam::minOp<Foam::label>());
+    const bool stateWritten = stateWriteCount == 1;
+#else
     const bool stateWritten = writeGate3gState
     (
         gate3gStateFile, couplingStep, liveLayers, accumulators
     );
+#endif
     if (stateWritten)
     {
         Foam::Info<< "GATE3G_STATE_WRITTEN step=" << couplingStep
@@ -1461,7 +1655,11 @@ int main(int argc, char *argv[])
               << " first_step=" << gate3gStartStep + 1
               << " last_step=" << couplingStep
               << " windows=" << feedbackWindows
+#ifdef GATE3J_DISTRIBUTED
+              << " final_parcels=" << globalFinalParcels
+#else
               << " final_parcels=" << dsmc.size()
+#endif
               << " inserted=" << totalInserted
               << " active_layer_changes=" << liveLayerChanges
               << " max_flux_checksum=" << maximumFeedbackChecksum
@@ -1477,6 +1675,18 @@ int main(int argc, char *argv[])
               << " checkpoint_written="
               << (stateWritten ? "true" : "false")
               << Foam::endl;
+#ifdef GATE3J_DISTRIBUTED
+    Foam::label distributedPass = pass ? 1 : 0;
+    Foam::reduce(distributedPass, Foam::minOp<Foam::label>());
+    Foam::Info<< (distributedPass ? "GATE3J_PASS" : "GATE3J_FAIL")
+              << " role=dsmc_distributed"
+              << " spatial_ranks=" << Foam::Pstream::nProcs()
+              << " global_final_parcels=" << globalFinalParcels
+              << " global_interface_ownership=true"
+              << " global_wall_flux_reduction=true"
+              << " full_dsmcFoam_time_advance=true"
+              << Foam::endl;
+#endif
 #else
     const bool pass =
         couplingStep == gate3e::kineticSteps
@@ -1536,5 +1746,9 @@ int main(int argc, char *argv[])
               << " final_parcels=" << dsmc.size()
               << " inserted=" << totalInserted << Foam::endl;
 #endif
+#ifdef GATE3J_DISTRIBUTED
+    return pass && distributedPass ? 0 : 2;
+#else
     return pass ? 0 : 2;
+#endif
 }
