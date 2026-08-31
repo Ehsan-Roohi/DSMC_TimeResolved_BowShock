@@ -40,7 +40,11 @@ const char* liveDsmcUri()
     return value == nullptr ? "mpi://dsmc/gate3g" : value;
 }
 
+#ifdef GATE3N_KNGL
+constexpr long gate3gMaximumSegmentStep = 12000;
+#else
 constexpr long gate3gMaximumSegmentStep = 10000;
+#endif
 
 int gate3gEnvironmentStep(const char* name, const int fallback)
 {

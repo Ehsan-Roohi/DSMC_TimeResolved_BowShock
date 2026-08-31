@@ -12,6 +12,9 @@
 #ifdef GATE3E_LIVE
 #include "Gate3EMui.H"
 #include "muiFoam/PhysicalFeedback.hpp"
+#ifdef GATE3N_KNGL
+#include "muiFoam/KnGlInterface.hpp"
+#endif
 #endif
 #ifdef GATE3J_DISTRIBUTED
 #include "PstreamReduceOps.H"
@@ -20,6 +23,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -120,6 +124,45 @@ double conservationError(const Conserved& current, const Conserved& initial)
 constexpr double boltzmann = 1.380649e-23;
 constexpr double argonGasConstant = 8.31446261815324e3/39.948;
 constexpr double argonCv = 1.5*argonGasConstant;
+#ifdef GATE3N_KNGL
+constexpr double argonMolecularDiameter = 4.17e-10;
+constexpr double knGlActivateThreshold = 0.05;
+constexpr double knGlDeactivateThreshold = 0.03;
+
+void updateKnGlField
+(
+    Foam::volScalarField& knGl,
+    const Foam::volScalarField& rho,
+    const Foam::volScalarField& pressure,
+    const Foam::volScalarField& temperature,
+    const Foam::volVectorField& velocity
+)
+{
+    const Foam::tmp<Foam::volVectorField> gradRho = Foam::fvc::grad(rho);
+    const Foam::tmp<Foam::volVectorField> gradT = Foam::fvc::grad(temperature);
+    const Foam::tmp<Foam::volTensorField> gradU = Foam::fvc::grad(velocity);
+    forAll(knGl, celli)
+    {
+        const double lambda = muiFoam::hardSphereMeanFreePath
+        (
+            pressure[celli], temperature[celli],
+            argonMolecularDiameter, boltzmann
+        );
+        const double velocityScale = std::max
+        (
+            Foam::mag(velocity[celli]),
+            std::sqrt(2.0*pressure[celli]/rho[celli])
+        );
+        knGl[celli] = muiFoam::combinedGradientLengthKn
+        (
+            lambda, rho[celli], Foam::mag(gradRho()[celli]),
+            temperature[celli], Foam::mag(gradT()[celli]),
+            velocityScale, Foam::mag(gradU()[celli])
+        );
+    }
+    knGl.correctBoundaryConditions();
+}
+#endif
 #ifdef GATE3G_RECOVERY
 constexpr const char* liveGateLabel = "GATE3G";
 constexpr const char* liveComparisonEnvironment = "GATE3G_COMPARISON";
@@ -130,7 +173,11 @@ const char* liveContinuumUri()
     return value == nullptr ? "mpi://continuum/gate3g" : value;
 }
 
+#ifdef GATE3N_KNGL
+constexpr long gate3gMaximumSegmentStep = 12000;
+#else
 constexpr long gate3gMaximumSegmentStep = 10000;
+#endif
 
 int gate3gEnvironmentStep(const char* name, const int fallback)
 {
@@ -157,6 +204,38 @@ std::string gate3gSegmentName()
     const char* value = std::getenv("GATE3G_SEGMENT");
     return value == nullptr ? "continuous" : value;
 }
+#ifdef GATE3N_KNGL
+bool readGate3nLayers
+(
+    const std::string& path,
+    const int expectedStep,
+    std::vector<int>& layers
+)
+{
+    std::ifstream input(path.c_str());
+    std::string magic;
+    int step = -1;
+    std::size_t count = 0;
+    if (!(input >> magic >> step >> count)
+     || magic != "GATE3G_STATE_V1" || step != expectedStep
+     || count != gate3c::angularCells || layers.size() != count)
+    {
+        return false;
+    }
+    for (std::size_t face = 0; face < count; ++face)
+    {
+        double accumulator = 0.0;
+        if (!(input >> layers[face] >> accumulator)
+         || layers[face] < 4 || layers[face] > 8
+         || !std::isfinite(accumulator))
+        {
+            return false;
+        }
+    }
+    input >> std::ws;
+    return input.eof();
+}
+#endif
 #elif defined(GATE3F_DYNAMIC)
 constexpr const char* liveGateLabel = "GATE3F";
 constexpr const char* liveContinuumUri = "mpi://continuum/gate3f";
@@ -313,6 +392,16 @@ int main(int argc, char *argv[])
 #ifdef GATE3G_RECOVERY
     if (couplingStep > 0)
     {
+#ifdef GATE3N_KNGL
+        const char* statePath = std::getenv("GATE3G_STATE_FILE");
+        if (statePath == nullptr
+         || !readGate3nLayers(statePath, couplingStep, previousLayers))
+        {
+            Foam::Info<< "GATE3N_FAIL role=continuum reason=restart_state"
+                      << " expected_step=" << couplingStep << Foam::endl;
+            return 2;
+        }
+#else
         const int previousWindow =
             (couplingStep - 1)/gate3e::windowSteps;
         for (int face = 0; face < gate3c::angularCells; ++face)
@@ -322,7 +411,31 @@ int main(int argc, char *argv[])
                 indicators[face], previousWindow
             );
         }
+#endif
     }
+#endif
+#ifdef GATE3N_KNGL
+    const char* knGlHistoryValue = std::getenv("GATE3N_KNGL_HISTORY");
+    if (knGlHistoryValue == nullptr)
+    {
+        Foam::Info<< "GATE3N_FAIL role=continuum reason=history_environment"
+                  << Foam::endl;
+        return 2;
+    }
+    Foam::volScalarField knGl
+    (
+        Foam::IOobject
+        (
+            "KnGL", runTime.timeName(), mesh,
+            Foam::IOobject::NO_READ, Foam::IOobject::AUTO_WRITE
+        ),
+        mesh,
+        Foam::dimensionedScalar("KnGL", Foam::dimless, 0.0)
+    );
+    int knGlUpdates = 0;
+    int knGlThresholdFaces = 0;
+    double maximumKnGl = 0.0;
+    double minimumKnGl = Foam::GREAT;
 #endif
     double maximumFeedbackConservationError = 0.0;
     double maximumVelocityChange = 0.0;
@@ -565,9 +678,95 @@ int main(int argc, char *argv[])
 #ifdef GATE3E_LIVE
         ++couplingStep;
         const int window = (couplingStep - 1)/gate3e::windowSteps;
+#ifdef GATE3N_KNGL
+        if ((couplingStep - 1) % gate3e::windowSteps == 0)
+        {
+            updateKnGlField(knGl, rho, p, T, U);
+            std::ofstream history;
+            if (Foam::Pstream::master())
+            {
+                history.open(knGlHistoryValue, std::ios::app);
+                if (!history)
+                {
+                    Foam::Info<< "GATE3N_FAIL role=continuum reason=history_open"
+                              << Foam::endl;
+                    return 2;
+                }
+                if (knGlUpdates == 0)
+                {
+                    history << "window,step,face,theta_rad,previous_layers,"
+                            << "requested_layers,current_layers,max_kn_gl\n";
+                }
+            }
+            int thresholdFaces = 0;
+            for (int face = 0; face < gate3c::angularCells; ++face)
+            {
+                std::vector<double> profile(8, 0.0);
+                const double theta = gate3c::centreAngle(face);
+                for (int layer = 1; layer <= 8; ++layer)
+                {
+                    const double radius = gate3c::cylinderRadius
+                        + (layer - 0.5)*gate3c::continuumRadialWidth;
+                    const Foam::label celli = nearestCell
+                    (
+                        mesh, gate3c::makePoint
+                        (
+                            radius*std::cos(theta),
+                            radius*std::sin(theta), 0.0
+                        )
+                    );
+                    if (celli == -2)
+                    {
+                        Foam::Info<< "GATE3N_FAIL role=continuum"
+                                  << " reason=kn_gl_owner face=" << face
+                                  << " layer=" << layer << Foam::endl;
+                        return 2;
+                    }
+                    double value = celli >= 0 ? knGl[celli] : 0.0;
+#ifdef GATE3J_DISTRIBUTED
+                    Foam::reduce(value, Foam::maxOp<double>());
+#endif
+                    profile[layer - 1] = value;
+                }
+                const muiFoam::KnGlLayerDecision decision =
+                    muiFoam::knGlLayerDecision
+                    (
+                        profile, previousLayers[face],
+                        knGlActivateThreshold, knGlDeactivateThreshold,
+                        4, 8, 1
+                    );
+                if (decision.currentLayers != previousLayers[face])
+                {
+                    ++adaptiveLayerChanges;
+                }
+                previousLayers[face] = decision.currentLayers;
+                maximumKnGl = std::max(maximumKnGl, decision.maximumKnGl);
+                minimumKnGl = std::min(minimumKnGl, decision.maximumKnGl);
+                thresholdFaces += decision.activationThresholdExceeded ? 1 : 0;
+                if (Foam::Pstream::master())
+                {
+                    history << window << ',' << couplingStep << ',' << face
+                            << ',' << theta << ',' << decision.previousLayers
+                            << ',' << decision.requestedLayers << ','
+                            << decision.currentLayers << ','
+                            << decision.maximumKnGl << '\n';
+                }
+            }
+            ++knGlUpdates;
+            knGlThresholdFaces = std::max(knGlThresholdFaces, thresholdFaces);
+            Foam::Info<< "GATE3N_KNGL_WINDOW window=" << window
+                      << " step=" << couplingStep
+                      << " threshold_faces=" << thresholdFaces
+                      << " layer_changes=" << adaptiveLayerChanges
+                      << " max_kn_gl=" << maximumKnGl << Foam::endl;
+        }
+#endif
         std::vector<Foam::label> targetCells(gate3c::angularCells, -1);
         for (int face = 0; face < gate3c::angularCells; ++face)
         {
+#ifdef GATE3N_KNGL
+            const int activeLayers = previousLayers[face];
+#else
             const int activeLayers = muiFoam::physicalLayersAtWindow
             (
                 indicators[face], window
@@ -577,6 +776,7 @@ int main(int argc, char *argv[])
                 previousLayers[face] = activeLayers;
                 ++adaptiveLayerChanges;
             }
+#endif
             const Foam::label celli = nearestCell
             (
                 mesh,
@@ -891,6 +1091,12 @@ int main(int argc, char *argv[])
                   << " T=" << localState.temperature << Foam::endl;
 #endif
 
+#ifdef GATE3N_KNGL
+        if (couplingStep == gate3gStopStep)
+        {
+            updateKnGlField(knGl, rho, p, T, U);
+        }
+#endif
         runTime.write();
         runTime.printExecutionTime(Foam::Info);
     }
@@ -912,6 +1118,26 @@ int main(int argc, char *argv[])
      && maximumVelocityChange > 0.0
      && maximumTemperatureChange > 0.0
      && minimumFeedbackScale > 0.0;
+#ifdef GATE3N_KNGL
+    const bool knGlPass =
+        knGlUpdates == gate3gExpectedWindows
+     && knGlThresholdFaces > 0
+     && adaptiveLayerChanges > 0
+     && std::isfinite(maximumKnGl)
+     && maximumKnGl >= knGlActivateThreshold;
+    Foam::Info<< (knGlPass ? "GATE3N_PASS" : "GATE3N_FAIL")
+              << " role=kn_gl_interface"
+              << " updates=" << knGlUpdates
+              << " windows=" << gate3gExpectedWindows
+              << " max_kn_gl=" << maximumKnGl
+              << " min_column_max_kn_gl=" << minimumKnGl
+              << " activate_threshold=" << knGlActivateThreshold
+              << " deactivate_threshold=" << knGlDeactivateThreshold
+              << " threshold_faces=" << knGlThresholdFaces
+              << " layer_changes=" << adaptiveLayerChanges
+              << " live_field_written=true history_written=true"
+              << Foam::endl;
+#endif
     Foam::Info<< (pass ? "GATE3G_PASS" : "GATE3G_FAIL")
               << " role=continuum_live"
               << " segment=" << gate3gSegment.c_str()
@@ -980,7 +1206,11 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef GATE3J_DISTRIBUTED
+#ifdef GATE3N_KNGL
+    return pass && distributedPass && knGlPass ? 0 : 2;
+#else
     return pass && distributedPass ? 0 : 2;
+#endif
 #else
     return pass ? 0 : 2;
 #endif

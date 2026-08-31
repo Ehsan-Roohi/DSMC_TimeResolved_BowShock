@@ -49,6 +49,10 @@ if(BUILD_CORE_TESTS)
     )
     target_link_libraries(test_dynamic_particle_domain PRIVATE muiFoamCore)
     add_test(NAME dynamic_particle_domain COMMAND test_dynamic_particle_domain)
+
+    add_executable(test_kn_gl_interface tests/test_kn_gl_interface.cpp)
+    target_link_libraries(test_kn_gl_interface PRIVATE muiFoamCore)
+    add_test(NAME kn_gl_interface COMMAND test_kn_gl_interface)
 endif()
 
 if(BUILD_MUI_GATE0 OR BUILD_MUI_GATE1A OR BUILD_MUI_GATE3A OR BUILD_MUI_GATE3B OR BUILD_MUI_GATE3D OR BUILD_MUI_GATE3I)

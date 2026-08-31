@@ -1,0 +1,3 @@
+rhoCentralFoamGate3N.C
+
+EXE = $(GATE3N_BUILD_DIR)/openfoam/rhoCentralFoamGate3N
