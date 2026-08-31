@@ -721,6 +721,7 @@ bool updateDynamicParticleDomain
 {
     std::vector<gate3c::State> states(gate3c::angularCells);
     std::vector<int> requestedLayers(gate3c::angularCells, -1);
+    bool validRequest = true;
     for (int point = 0; point < gate3c::angularCells; ++point)
     {
         states[point] = gate3c::fetchState
@@ -738,8 +739,17 @@ bool updateDynamicParticleDomain
          || requestedLayers[point] > muiFoam::maximumContinuumLayers
         )
         {
-            return false;
+            validRequest = false;
         }
+    }
+#ifdef GATE3J_DISTRIBUTED
+    Foam::label globallyValidRequest = validRequest ? 1 : 0;
+    Foam::reduce(globallyValidRequest, Foam::minOp<Foam::label>());
+    validRequest = globallyValidRequest == 1;
+#endif
+    if (!validRequest)
+    {
+        return false;
     }
 
     std::vector<bool> newlyActivated(cloud.mesh().nCells(), false);
@@ -818,6 +828,9 @@ bool updateDynamicParticleDomain
     (
         cloud, newlyActivated, states, cellPoint
     );
+#ifdef GATE3J_DISTRIBUTED
+    Foam::reduce(activationZ, Foam::maxOp<double>());
+#endif
     if (!std::isfinite(activationZ) || activationZ > 1.0)
     {
         return false;
@@ -840,7 +853,16 @@ bool updateDynamicParticleDomain
             );
         }
     }
-    if (retainedBefore != retainedAfter)
+    bool retainedIdentityValid = retainedBefore == retainedAfter;
+#ifdef GATE3J_DISTRIBUTED
+    Foam::label globallyRetainedIdentityValid = retainedIdentityValid ? 1 : 0;
+    Foam::reduce
+    (
+        globallyRetainedIdentityValid, Foam::minOp<Foam::label>()
+    );
+    retainedIdentityValid = globallyRetainedIdentityValid == 1;
+#endif
+    if (!retainedIdentityValid)
     {
         return false;
     }
@@ -869,13 +891,15 @@ bool updateDynamicParticleDomain
             cloud, states[point], point, liveLayers[point], ownerCell,
             accumulators[point]
         );
-        if (inserted < 0)
-        {
-            return false;
-        }
-        reservoirInserted += inserted;
+        if (inserted < 0) validRequest = false;
+        else reservoirInserted += inserted;
     }
-    return true;
+#ifdef GATE3J_DISTRIBUTED
+    globallyValidRequest = validRequest ? 1 : 0;
+    Foam::reduce(globallyValidRequest, Foam::minOp<Foam::label>());
+    validRequest = globallyValidRequest == 1;
+#endif
+    return validRequest;
 }
 
 Foam::label removeInactiveDynamicParcels
@@ -1367,6 +1391,10 @@ int main(int argc, char *argv[])
         {
 #ifdef GATE3F_DYNAMIC
             double activationZ = 0.0;
+#ifdef GATE3N_KNGL
+            Foam::Info<< "GATE3N_TRANSITION_BEGIN step=" << couplingStep
+                      << " local_parcels=" << dsmc.size() << Foam::endl;
+#endif
             if
             (
                 !updateDynamicParticleDomain
@@ -1387,6 +1415,11 @@ int main(int argc, char *argv[])
                 return 2;
             }
             maximumActivationZ = std::max(maximumActivationZ, activationZ);
+#ifdef GATE3N_KNGL
+            Foam::Info<< "GATE3N_TRANSITION_END step=" << couplingStep
+                      << " local_parcels=" << dsmc.size()
+                      << " max_overlap_z=" << activationZ << Foam::endl;
+#endif
 #else
             const Foam::label inserted = injectMappedReservoir
             (
