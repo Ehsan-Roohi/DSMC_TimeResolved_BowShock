@@ -6,6 +6,9 @@ class Gate3NTests(unittest.TestCase):
   root=Path(__file__).resolve().parents[1];src=(root/"openfoam/gate1b/rhoCentralFoamMUI/rhoCentralFoamMUI.C").read_text();run=(root/"scripts/run_gate3n.sh").read_text()
   for token in ("updateKnGlField(knGl, rho, p, T, U)","hardSphereMeanFreePath","GATE3N_KNGL_WINDOW","readGate3nLayers"):self.assertIn(token,src)
   for token in ('cp "$GATE3M_RUN/gate3m.state" "$STATE"',"GATE3G_START_STEP=10000","GATE3G_STOP_STEP=12000"):self.assertIn(token,run)
+  self.assertNotIn('cp -a "$GATE3M_RUN/continuum"',run)
+  self.assertIn('STAGE=stage_final_state',run)
+  self.assertIn('timeout --signal=TERM --kill-after=30 7200',run)
   self.assertIn('3M-LONG-MULTIWINDOW-STABILITY',(root/"scripts/require_gate3m_pass.py").read_text())
   block=src[src.index("#ifdef GATE3N_KNGL\n            const int activeLayers"):];block=block[:block.index("#else")];self.assertIn("previousLayers[face]",block);self.assertNotIn("physicalLayersAtWindow",block)
  def test_analyzer(self):

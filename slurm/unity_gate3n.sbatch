@@ -5,7 +5,7 @@
 #SBATCH --ntasks=4
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --output=reports/gate3n-%j.out
 #SBATCH --error=reports/gate3n-%j.err
 set -euo pipefail
