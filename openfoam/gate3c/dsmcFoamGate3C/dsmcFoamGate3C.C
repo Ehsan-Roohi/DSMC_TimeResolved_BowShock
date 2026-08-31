@@ -467,7 +467,11 @@ Foam::label seedDynamicCell
         target.numberDensity*cloud.mesh().V()[celli]/cloud.nParticle();
     const Foam::label groups = static_cast<Foam::label>
     (
-        muiFoam::momentPacketGroups(expectedParcels)
+        muiFoam::stochasticMomentPacketGroups
+        (
+            expectedParcels,
+            cloud.rndGen().sample01<Foam::scalar>()
+        )
     );
     const double moleculeMass = cloud.constProps(0).mass();
     const double thermalSpeed = std::sqrt
@@ -542,26 +546,33 @@ double auditDynamicActivation
 
     const double moleculeMass = cloud.constProps(0).mass();
     double maximumZ = 0.0;
+    double expectedParcelTotal = 0.0;
+    double packetVarianceTotal = 0.0;
+    Foam::label parcelTotal = 0;
     forAll(newlyActivated, celli)
     {
         if (!newlyActivated[celli])
         {
             continue;
         }
-        const Foam::label parcels = counts[celli];
-        if (parcels < 6)
-        {
-            return Foam::GREAT;
-        }
         const gate3c::State& target = states[cellPoint[celli]];
-        const double density =
-            parcels*cloud.nParticle()/cloud.mesh().V()[celli];
+        const double expectedParcels =
+            target.numberDensity*cloud.mesh().V()[celli]/cloud.nParticle();
+        const double expectedGroups = expectedParcels/6.0;
+        const double fractionalGroups =
+            expectedGroups - std::floor(expectedGroups);
+        expectedParcelTotal += expectedParcels;
+        packetVarianceTotal +=
+            36.0*fractionalGroups*(1.0 - fractionalGroups);
+        const Foam::label parcels = counts[celli];
+        parcelTotal += parcels;
+        if (parcels == 0)
+        {
+            continue;
+        }
         const Foam::vector velocity = velocitySums[celli]/parcels;
         const double temperature = moleculeMass*squaredSpeed[celli]
             /(3.0*boltzmann*parcels);
-        const double densityZ =
-            std::abs(density/target.numberDensity - 1.0)
-           *std::sqrt(static_cast<double>(parcels));
         const double velocitySigma = std::sqrt
         (
             3.0*boltzmann*target.temperature/(moleculeMass*parcels)
@@ -576,9 +587,17 @@ double auditDynamicActivation
         maximumZ = std::max
         (
             maximumZ,
-            std::max(densityZ, std::max(velocityZ, temperatureZ))
+            std::max(velocityZ, temperatureZ)
         );
     }
+    const double populationError = std::abs
+    (
+        static_cast<double>(parcelTotal) - expectedParcelTotal
+    );
+    const double populationZ = packetVarianceTotal > 1.0e-24
+        ? populationError/std::sqrt(packetVarianceTotal)
+        : (populationError <= 1.0e-12 ? 0.0 : Foam::GREAT);
+    maximumZ = std::max(maximumZ, populationZ);
     return maximumZ;
 }
 
@@ -831,7 +850,7 @@ bool updateDynamicParticleDomain
 #ifdef GATE3J_DISTRIBUTED
     Foam::reduce(activationZ, Foam::maxOp<double>());
 #endif
-    if (!std::isfinite(activationZ) || activationZ > 1.0)
+    if (!std::isfinite(activationZ) || activationZ > 5.0)
     {
         return false;
     }

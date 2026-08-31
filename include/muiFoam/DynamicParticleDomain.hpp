@@ -111,6 +111,27 @@ inline long long momentPacketGroups(const double expectedParcels)
     );
 }
 
+inline long long stochasticMomentPacketGroups
+(
+    const double expectedParcels,
+    const double uniformSample
+)
+{
+    if (!std::isfinite(expectedParcels) || expectedParcels <= 0.0
+     || !std::isfinite(uniformSample)
+     || uniformSample < 0.0 || uniformSample >= 1.0)
+    {
+        throw std::runtime_error("invalid stochastic moment-packet input");
+    }
+    const double expectedGroups = expectedParcels/6.0;
+    const long long wholeGroups = static_cast<long long>
+    (
+        std::floor(expectedGroups)
+    );
+    return wholeGroups
+        + (uniformSample < expectedGroups - wholeGroups ? 1LL : 0LL);
+}
+
 } // namespace muiFoam
 
 #endif

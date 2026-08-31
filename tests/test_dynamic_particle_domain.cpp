@@ -36,6 +36,21 @@ int main()
         "snapped radius"
     );
     require(muiFoam::momentPacketGroups(11.9) == 2, "packet rounding");
+    require
+    (
+        muiFoam::stochasticMomentPacketGroups(1.5, 0.20) == 1,
+        "fractional packet activation"
+    );
+    require
+    (
+        muiFoam::stochasticMomentPacketGroups(1.5, 0.30) == 0,
+        "fractional packet rejection"
+    );
+    require
+    (
+        muiFoam::stochasticMomentPacketGroups(13.2, 0.10) == 3,
+        "integer plus fractional packet"
+    );
 
     muiFoam::ParticleOwnershipLedger ledger;
     ledger.initialParcels = 100;

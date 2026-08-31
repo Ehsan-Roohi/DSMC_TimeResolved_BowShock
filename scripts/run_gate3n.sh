@@ -27,6 +27,7 @@ read -r MAGIC STEP FACES < "$STATE";[[ "$MAGIC" == GATE3G_STATE_V1 && "$STEP" ==
 STAGE=decompose;stamp "$STAGE"
 for spec in continuum:rhoCentralFoamGate3N hybrid:dsmcFoamGate3N;do c=${spec%%:*};app=${spec##*:};ctl="$RUN_DIR/$c/system/controlDict";foamDictionary "$ctl" -entry application -set "$app";foamDictionary "$ctl" -entry startFrom -set latestTime;foamDictionary "$ctl" -entry endTime -set 1;foamDictionary "$ctl" -entry deltaT -set 1e-7;foamDictionary "$ctl" -entry writeControl -set timeStep;foamDictionary "$ctl" -entry writeInterval -set 2000;foamDictionary "$ctl" -entry purgeWrite -set 3;cp "$ROOT/cases/gate3i/decomposeParDict" "$RUN_DIR/$c/system/decomposeParDict";foamDictionary "$RUN_DIR/$c/system/decomposeParDict" -entry numberOfSubdomains -set 2;foamDictionary "$RUN_DIR/$c/system/decomposeParDict" -entry simpleCoeffs/n -set '(2 1 1)';decomposePar -case "$RUN_DIR/$c" -force >/dev/null;done
 MPI=${MPI_LAUNCHER:-$(command -v mpirun)};export OMPI_MCA_pml=${OMPI_MCA_pml:-ob1}
+export OMPI_MCA_orte_abort_on_non_zero_status=1
 for c in continuum hybrid;do "$MPI" -np 2 checkMesh -parallel -case "$RUN_DIR/$c" -constant >/dev/null;done
 STAGE=kn_gl_live;stamp "$STAGE";LIVE="$REPORT_DIR/gate3n_live.log";HISTORY="$RUN_DIR/kn_gl_interface_history.csv"
 echo 'GATE3N_LAYOUT continuum_ranks=2 dsmc_ranks=2 total_ranks=4 start_step=10000 stop_step=12000 steps=2000 windows=10 criterion=Kn_GL'|tee "$LIVE"
