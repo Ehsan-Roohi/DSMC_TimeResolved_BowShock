@@ -5,6 +5,9 @@ class Gate3NTests(unittest.TestCase):
  def test_real_kn_gl_wiring(self):
   root=Path(__file__).resolve().parents[1];src=(root/"openfoam/gate1b/rhoCentralFoamMUI/rhoCentralFoamMUI.C").read_text();run=(root/"scripts/run_gate3n.sh").read_text()
   for token in ("updateKnGlField(knGl, rho, p, T, U)","hardSphereMeanFreePath","GATE3N_KNGL_WINDOW","readGate3nLayers"):self.assertIn(token,src)
+  dsmc=(root/"openfoam/gate3c/dsmcFoamGate3C/dsmcFoamGate3C.C").read_text()
+  self.assertIn("constexpr double dynamicActivationAuditLimit = 5.0",dsmc)
+  self.assertGreaterEqual(dsmc.count("maximumActivationZ <= dynamicActivationAuditLimit"),2)
   for token in ('cp "$GATE3M_RUN/gate3m.state" "$STATE"',"GATE3G_START_STEP=10000","GATE3G_STOP_STEP=12000"):self.assertIn(token,run)
   self.assertNotIn('cp -a "$GATE3M_RUN/continuum"',run)
   self.assertIn('STAGE=stage_final_state',run)

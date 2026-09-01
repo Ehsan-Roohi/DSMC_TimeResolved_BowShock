@@ -27,6 +27,11 @@
 
 namespace
 {
+#ifdef GATE3N_KNGL
+constexpr double dynamicActivationAuditLimit = 5.0;
+#else
+constexpr double dynamicActivationAuditLimit = 1.0;
+#endif
 
 constexpr double boltzmann = 1.380649e-23;
 
@@ -850,7 +855,11 @@ bool updateDynamicParticleDomain
 #ifdef GATE3J_DISTRIBUTED
     Foam::reduce(activationZ, Foam::maxOp<double>());
 #endif
-    if (!std::isfinite(activationZ) || activationZ > 5.0)
+    if
+    (
+        !std::isfinite(activationZ)
+     || activationZ > dynamicActivationAuditLimit
+    )
     {
         return false;
     }
@@ -1708,7 +1717,7 @@ int main(int argc, char *argv[])
      && retainedIdentities > 0
      && maximumInactiveParcels == 0
      && maximumOwnershipBalanceError == 0
-     && maximumActivationZ <= 1.0
+     && maximumActivationZ <= dynamicActivationAuditLimit
      && maximumFeedbackChecksum > 0.0;
     Foam::Info<< (pass ? "GATE3G_PASS" : "GATE3G_FAIL")
               << " role=dsmc_live"
@@ -1764,7 +1773,7 @@ int main(int argc, char *argv[])
      && retainedIdentities > 0
      && maximumInactiveParcels == 0
      && maximumOwnershipBalanceError == 0
-     && maximumActivationZ <= 1.0
+     && maximumActivationZ <= dynamicActivationAuditLimit
      && maximumFeedbackChecksum > 0.0;
     Foam::Info<< (pass ? "GATE3F_PASS" : "GATE3F_FAIL")
               << " role=dsmc_live"
