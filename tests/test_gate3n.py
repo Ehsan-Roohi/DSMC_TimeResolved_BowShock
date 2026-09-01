@@ -7,7 +7,7 @@ class Gate3NTests(unittest.TestCase):
   for token in ("updateKnGlField(knGl, rho, p, T, U)","hardSphereMeanFreePath","GATE3N_KNGL_WINDOW","readGate3nLayers"):self.assertIn(token,src)
   dsmc=(root/"openfoam/gate3c/dsmcFoamGate3C/dsmcFoamGate3C.C").read_text()
   self.assertIn("constexpr double dynamicActivationAuditLimit = 5.0",dsmc)
-  self.assertGreaterEqual(dsmc.count("maximumActivationZ <= dynamicActivationAuditLimit"),2)
+  self.assertGreaterEqual(dsmc.count("maximumActivationZ <= dynamicActivationAuditLimit"),2)\n  dynamic=(root/"include/muiFoam/DynamicParticleDomain.hpp").read_text()\n  self.assertIn("maximumContinuumLayers = 12",dynamic)\n  self.assertIn("reason=kinetic_domain_exhausted",src)\n  self.assertIn("profile(knGlMaximumLayers",src)
   for token in ('cp "$GATE3M_RUN/gate3m.state" "$STATE"',"GATE3G_START_STEP=10000","GATE3G_STOP_STEP=12000"):self.assertIn(token,run)
   self.assertNotIn('cp -a "$GATE3M_RUN/continuum"',run)
   self.assertIn('STAGE=stage_final_state',run)
