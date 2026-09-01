@@ -109,7 +109,8 @@ bool readGate3gState
         }
         if
         (
-            layers[point] < 4 || layers[point] > 8
+            layers[point] < muiFoam::minimumContinuumLayers
+         || layers[point] > muiFoam::maximumContinuumLayers
          || !std::isfinite(accumulators[point])
         )
         {
