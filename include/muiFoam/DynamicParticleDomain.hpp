@@ -11,7 +11,7 @@ namespace muiFoam
 {
 
 constexpr int minimumContinuumLayers = 4;
-constexpr int maximumContinuumLayers = 8;
+constexpr int maximumContinuumLayers = 12;
 constexpr int kineticMeshLayers = 6;
 
 inline int activeKineticLayers(const int continuumLayers)
