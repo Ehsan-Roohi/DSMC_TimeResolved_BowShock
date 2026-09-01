@@ -43,7 +43,7 @@ inline mui::point3d continuumSamplePoint
     const int activeLayers
 )
 {
-    const int boundedLayers = std::max(4, std::min(8, activeLayers));
+    const int boundedLayers = std::max(4, std::min(12, activeLayers));
     const double theta = gate3c::centreAngle(pointIndex);
     const double radius = gate3c::cylinderRadius
         + (boundedLayers + 0.5)*gate3c::continuumRadialWidth;
