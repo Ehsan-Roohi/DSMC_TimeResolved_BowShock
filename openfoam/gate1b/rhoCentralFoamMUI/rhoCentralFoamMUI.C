@@ -128,6 +128,8 @@ constexpr double argonCv = 1.5*argonGasConstant;
 constexpr double argonMolecularDiameter = 4.17e-10;
 constexpr double knGlActivateThreshold = 0.05;
 constexpr double knGlDeactivateThreshold = 0.03;
+constexpr int knGlMinimumLayers = 4;
+constexpr int knGlMaximumLayers = 12;
 
 void updateKnGlField
 (
@@ -226,7 +228,8 @@ bool readGate3nLayers
     {
         double accumulator = 0.0;
         if (!(input >> layers[face] >> accumulator)
-         || layers[face] < 4 || layers[face] > 8
+         || layers[face] < knGlMinimumLayers
+         || layers[face] > knGlMaximumLayers
          || !std::isfinite(accumulator))
         {
             return false;
@@ -701,9 +704,9 @@ int main(int argc, char *argv[])
             int thresholdFaces = 0;
             for (int face = 0; face < gate3c::angularCells; ++face)
             {
-                std::vector<double> profile(8, 0.0);
+                std::vector<double> profile(knGlMaximumLayers, 0.0);
                 const double theta = gate3c::centreAngle(face);
-                for (int layer = 1; layer <= 8; ++layer)
+                for (int layer = 1; layer <= knGlMaximumLayers; ++layer)
                 {
                     const double radius = gate3c::cylinderRadius
                         + (layer - 0.5)*gate3c::continuumRadialWidth;
@@ -733,8 +736,25 @@ int main(int argc, char *argv[])
                     (
                         profile, previousLayers[face],
                         knGlActivateThreshold, knGlDeactivateThreshold,
-                        4, 8, 1
+                        knGlMinimumLayers, knGlMaximumLayers, 1
                     );
+                if
+                (
+                    decision.requestedLayers == knGlMaximumLayers
+                 && profile[knGlMaximumLayers - 1]
+                    >= knGlActivateThreshold
+                )
+                {
+                    Foam::Info<< "GATE3N_FAIL role=continuum"
+                              << " reason=kinetic_domain_exhausted"
+                              << " face=" << face
+                              << " step=" << couplingStep
+                              << " outer_kn_gl="
+                              << profile[knGlMaximumLayers - 1]
+                              << " maximum_layers=" << knGlMaximumLayers
+                              << Foam::endl;
+                    return 2;
+                }
                 if (decision.currentLayers != previousLayers[face])
                 {
                     ++adaptiveLayerChanges;
