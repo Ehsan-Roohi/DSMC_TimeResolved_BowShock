@@ -1,0 +1,72 @@
+\appendix
+\section{Support and registration diagnostics}
+The support audit in \cref{fig:support} was repeated for density, Mach number, pressure and both temperature fields. The strongest false condensation occurred in the density field at $\KnD=0.25$ and the rotational-temperature field at $\KnD=0.5$--1. Across the full audit, 88--99.8\% of the apparent leading-mode energy in the most affected cases lay in the non-physical attached support. Corrected results were insensitive to physical buffers $s/R=0$, 0.02 and 0.05 within the retained gas region. The common-200 comparisons use $s/R\geq0.02$.
+
+\section{Statistical decision rules}
+The covariance model is not accepted from $\Delta AIC_c$ alone. A resolved classification requires: (i) positive bootstrap model preference; (ii) lower leave-one-group-size-out error for the physical-plus-noise model; (iii) positive far-angle covariance; (iv) a smooth displacement-like mode; (v) controlled false detection under noise-only synthetic data; and (vi) a small correction in the PSD-constrained covariance fit. This combined rule is why the nominal positive $\Delta AIC_c$ at $\KnD=0.05$ is rejected.
+
+The corrected injection analysis uses a combined detection criterion rather than raw negative eigenvalue mass of the unconstrained covariance. Under this rule the noise-only false-positive rate is zero in the tested cases. The $\KnD=0.025$ record has power 0.89 at the reference amplitude, while the transitional records are calibration-limited as described in \cref{fig:limits}.
+
+\section{Detailed full-field moment diagnostics}
+\Cref{tab:fullfielddetail} reports the full-field metrics from which the coherent gains are formed. The amplitude standard deviations are expressed as equivalent radial displacement divided by $R$. The projection fraction is the median squared weighted spatial correlation of the instantaneous field with the translation template; it is not a fraction of thermodynamic energy.
+
+\begin{center}
+\captionof{table}{Detailed displacement-template results. Brackets give 95\% moving-block intervals for field--marker correlation.}
+\label{tab:fullfielddetail}
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{ccccccc}
+\toprule
+$\KnD$ & variable & $r(a_q,a_m)$ & 95\% interval & $\sigma_{a_q}/R$ & median projection (\%) & $G_q$\\
+\midrule
+0.010 & $\rho$ & 0.946 & [0.921,0.962] & $4.82\times10^{-4}$ & 5.29 & 0.828\\
+      & $p$     & 0.901 & [0.845,0.928] & $4.77\times10^{-4}$ & 4.03 & 0.781\\
+      & $M$     & 0.755 & [0.670,0.821] & $5.12\times10^{-4}$ & 2.30 & 0.702\\
+      & $T_{tr}$& 0.707 & [0.599,0.777] & $5.37\times10^{-4}$ & 1.24 & 0.690\\
+\addlinespace
+0.025 & $\rho$ & 0.790 & [0.723,0.847] & $6.81\times10^{-4}$ & 2.37 & 0.631\\
+      & $p$     & 0.727 & [0.652,0.788] & $6.74\times10^{-4}$ & 1.60 & 0.575\\
+      & $M$     & 0.395 & [0.253,0.512] & $7.90\times10^{-4}$ & 1.73 & 0.367\\
+      & $T_{tr}$& 0.273 & [0.155,0.371] & $9.71\times10^{-4}$ & 0.97 & 0.312\\
+\addlinespace
+0.050 & $\rho$ & 0.183 & [0.054,0.340] & $6.47\times10^{-4}$ & 0.67 & 0.087\\
+      & $p$     & 0.510 & [0.428,0.605] & $9.89\times10^{-4}$ & 0.77 & 0.369\\
+      & $M$     & 0.325 & [0.179,0.433] & $1.09\times10^{-3}$ & 1.06 & 0.260\\
+      & $T_{tr}$& 0.164 & [0.034,0.284] & $8.00\times10^{-4}$ & 0.46 & 0.096\\
+\bottomrule
+\end{tabular}%
+}
+\end{center}
+
+\section{Full-record covariance inference across the transition range}
+The complete-record results in \cref{tab:fullcov} explain why positive nominal model preference is insufficient. The $\KnD=0.05$ and $0.075$ fits have positive $\Delta AIC_c$, but their two-component LOOCV ratios exceed unity and their bootstrap far-angle intervals include zero. At $0.10$, the nominal time scale has a very broad bootstrap upper tail. These cases are therefore not classified as persistent physical modes.
+
+\begin{center}
+\captionof{table}{Full-record correlated-noise diagnostics for the transition-range cases. $R_{cv}$ is the two-component/noise-only LOOCV ratio and $\epsilon_{PSD}$ is the relative PSD correction.}
+\label{tab:fullcov}
+\scriptsize
+\begin{tabular}{cccccccc}
+\toprule
+$\KnD$ & $\Delta AIC_c$ & bootstrap interval & $R_{cv}$ & $\tau_p^*$ & $r_{unif}$ & far-angle interval & $\epsilon_{PSD}$\\
+\midrule
+0.025 & 59.1 & [29.0,64.4] & 0.58 & 0.724 & 0.876 & [0.120,0.287] & $<10^{-12}$\\
+0.050 & 18.0 & [1.9,37.5] & 3.74 & 0.280 & 0.767 & [-0.002,0.089] & 0.539\\
+0.075 & 36.4 & [-1.8,58.5] & 1.50 & 0.466 & 0.644 & [-0.001,0.108] & 0.152\\
+0.100 & 18.9 & [-16.9,51.7] & 1.16 & 1.007 & 0.584 & [-0.031,0.112] & 0.019\\
+0.150 & -5.0 & [-8.2,12.9] & 18.77 & 0.210 & 0.475 & [-0.028,0.049] & 0.836\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Derivation of the coherent-gain and memory diagnostics}
+For completeness, the least-squares slope of a field-equivalent displacement $a_q$ on the marker amplitude $a_m$ is
+\begin{equation}
+ \widehat G_q=\arg\min_G\sum_t(a_q-Ga_m)^2
+ =\frac{\operatorname{cov}(a_q,a_m)}{\operatorname{var}(a_m)},
+\end{equation}
+which gives \cref{eq:gain}. The metric combines correlation and relative amplitude. It is not an energy fraction and can therefore remain appreciable when the translation template explains little of the total unconditioned variance.
+
+The memory ratios in \cref{eq:passage} use only body-scale convective normalization. At $\KnD=0.01$, $\deltaten/D=0.0615$ and $\scenter/D=0.231$, giving $\tau_p^*/t_\delta^*=10.61$ and $\tau_p^*/t_s^*=2.83$. At $\KnD=0.025$, the corresponding ratios are $6.46$ and $3.09$. These values are descriptive comparisons, not universal constants or fitted scaling laws.
+
+\section{Separation from the companion mean-flow analysis}
+The companion manuscript \citep{RoohiShoja2026Mean} uses converged mean fields across Mach- and Knudsen-number sweeps. Its principal observables are mean front location, mean thickness, variable-specific static relaxation lengths, profile registration and POD across operating conditions. The present paper uses consecutive outputs at fixed operating conditions. Its principal observables are temporal marker covariance, autoregressive memory, angular eigenfunctions, full-field equivalent displacement amplitudes, sliding-window persistence and injection-based detectability. No temporal covariance, memory, coherent-gain or multi-moment synchronization result in the present paper is reported in the companion work.
